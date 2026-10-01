@@ -1,7 +1,11 @@
 import { defineBoot } from '#q-app'
+import axios from 'axios'
 
-// "async" is optional;
-// more info on params: https://v2.quasar.dev/quasar-cli-vite/boot-files
-export default defineBoot(async (/* { app, router, ... } */) => {
-  // something to do
+const api = axios.create({
+  baseURL: import.meta.env.local.VITE_API_BASE_URL,
 })
+
+export default defineBoot(({ app }) => {
+})
+
+export { api }
