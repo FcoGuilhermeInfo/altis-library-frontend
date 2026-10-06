@@ -5,7 +5,7 @@ const api = axios.create({
   baseURL: import.meta.env.local.VITE_API_BASE_URL,
 })
 
-export default defineBoot(({ app }) => {
+export default defineBoot(() => {
 })
 
 export { api }
