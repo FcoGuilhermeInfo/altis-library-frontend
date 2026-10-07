@@ -1,6 +1,10 @@
 
 
 export default {
+    common: {
+        save: "Save"
+    },
+    
     menu: {
       loans: "Loans",
       users: "Users",
@@ -11,6 +15,10 @@ export default {
     menuprofile: {
         profile: "Profile",
         change_language: "Change Language",
-        logout: "Logout"
+        logout: "Logout",
+        languages: "Languages",
+        portuguese: "🇧🇷 Portuguese",
+        spanish: "🇪🇸 Spanish",
+        english: "🇺🇸 English"
     }
 };

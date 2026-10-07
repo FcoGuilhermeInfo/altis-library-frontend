@@ -1,4 +1,16 @@
 <script setup lang="ts">
+import LanguageDialog from './LanguageDialog.vue';
+
+import { ref } from 'vue'
+
+const showLanguageDialog = ref(false)
+
+function handleMenuItem(item: typeof menuItems[number]) {
+    if (item.action === 'language') {
+        showLanguageDialog.value = true
+    }
+}
+
 const user = {
     name: 'Usuario da Silva'
 }
@@ -11,8 +23,8 @@ const menuItems = [
     },
     {
         label: 'menuprofile.change_language',
-        to: '/language',
         icon: 'language',
+        action: 'language'
     },
     {
         label: 'menuprofile.logout',
@@ -54,10 +66,11 @@ const menuItems = [
 
             <q-item
                 v-for="(item, index) in menuItems"
-                :key="item.to"
+                :key="item.label"
                 clickable
                 :to="item.to"
                 class="menu-options"
+                @click="handleMenuItem(item)"
                 :class="{ 'logout-item': index === 2 }"
                 active-class="menu-item-active"
             >
@@ -73,6 +86,8 @@ const menuItems = [
             </q-item>
         </q-list>
     </q-btn-dropdown>
+
+    <LanguageDialog v-model="showLanguageDialog"/>
 </template>
 
 <style scoped>
@@ -124,7 +139,7 @@ const menuItems = [
 } 
 
 .menu-icon {
-    font-size: 240px
+    font-size: 24px
 }
 
 .logout-item {
