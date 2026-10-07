@@ -58,7 +58,7 @@ function changeLanguage() {
                 <q-btn
                     unelevated
                     rounded
-                    color="primary"
+                    class="btn-save"
                     :label=" $t('common.save')"
                     @click="changeLanguage"
                 />
@@ -103,8 +103,11 @@ function changeLanguage() {
         padding-bottom: 30px;
     }
 
-    .q-card-actions .q-btn {
-        min-width: 170px;
+    .btn-save {
+        min-width: 300px;
+        width: 50%;
+        height: 5px;
         margin-top: 100px;
+        background-color: #0F9DB0;
     }
 </style>
