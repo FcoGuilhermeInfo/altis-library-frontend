@@ -20,5 +20,17 @@ export default {
         portuguese: "🇧🇷 Portuguese",
         spanish: "🇪🇸 Spanish",
         english: "🇺🇸 English"
+    },
+
+    login: {
+        login: "Login",
+        email: "Email",
+        password: "Password",
+        rememberMe: "Remember-me",
+        enter: "Enter",
+        or: "or",
+        forgotPassword: "Forgot your password?",
+        noAccount: "Don't have an account?",
+        register: "Sign up"
     }
 };
