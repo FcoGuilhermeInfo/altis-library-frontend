@@ -7,6 +7,7 @@ import {
 } from 'vue-router';
 
 import routes from './routes';
+import { useAuthStore } from '@/stores/authStore';
 
 /*
  * If not building with SSR mode, you can
@@ -17,7 +18,7 @@ import routes from './routes';
  * with the Router instance.
  */
 
-export default defineRouter((/* { store, ssrContext } */) => {
+export default defineRouter(( { store }) => {
   const createHistory = import.meta.env.QUASAR_SERVER
     ? createMemoryHistory
     : import.meta.env.QUASAR_VUE_ROUTER_MODE === 'history'
@@ -33,6 +34,21 @@ export default defineRouter((/* { store, ssrContext } */) => {
     // quasar.conf.js -> build -> publicPath
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE),
   });
+
+
+  Router.beforeEach((to) => {
+    const authStore = useAuthStore(store)
+
+    if (to.meta.requiresAuth && !authStore.isAuthenticated()) {
+      return '/login'
+    }
+
+    if (to.path === '/login' && authStore.isAuthenticated()) {
+      return '/dashboard'
+    }
+
+    return true
+  })
 
   return Router;
 });

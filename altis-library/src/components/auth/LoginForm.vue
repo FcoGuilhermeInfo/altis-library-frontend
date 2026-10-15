@@ -3,13 +3,20 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import {
+  saveRememberedEmail,
+  getRememberedEmail,
+  clearRememberedEmail,
+} from '@/utils/rememberMe'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-const email = ref('')
+const rememberedEmail = getRememberedEmail()
+
+const email = ref<string>(rememberedEmail)
 const password = ref('')
-const rememberMe = ref(false)
+const rememberMe = ref(Boolean(rememberedEmail))
 const showPassword = ref(false)
 
 const requiredRule = (value: string | null) =>
@@ -29,6 +36,12 @@ async function onSubmit() {
       email: email.value.trim(),
       password: password.value,
     })
+
+    if (rememberMe.value) {
+      saveRememberedEmail(email.value.trim())
+    } else {
+      clearRememberedEmail()
+    }
 
     await router.push('/dashboard')
   } catch (error: unknown) {
@@ -99,7 +112,7 @@ async function onSubmit() {
 
       <q-checkbox v-model="rememberMe" :label="$t('login.rememberMe')" class="remember-checkbox" />
 
-      <q-btn type="submit" :label="$t('login.enter')" class="login-button" no-caps unelevated />
+      <q-btn type="submit" :label="$t('login.enter')" :loading="authStore.loading" :disable="authStore.loading" class="login-button" no-caps unelevated />
     </q-form>
 
     <div class="login-divider">
