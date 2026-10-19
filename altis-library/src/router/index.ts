@@ -8,6 +8,7 @@ import {
 
 import routes from './routes';
 import { useAuthStore } from '@/stores/authStore';
+import type { UserRole } from '@/types/auth';
 
 /*
  * If not building with SSR mode, you can
@@ -36,8 +37,17 @@ export default defineRouter(( { store }) => {
   });
 
 
+  let sessionRestored = false
+
   Router.beforeEach((to) => {
     const authStore = useAuthStore(store)
+
+    if (!sessionRestored) {
+      if (!import.meta.env.SSR) {
+        authStore.restoreSession()
+      }
+      sessionRestored = true
+    }
 
     if (to.meta.requiresAuth && !authStore.isAuthenticated()) {
       return '/login'
@@ -47,6 +57,25 @@ export default defineRouter(( { store }) => {
       return '/dashboard'
     }
 
+
+    const allowedRoles = to.meta.roles as UserRole[] | undefined
+
+    const requiresAuth = to.meta.requiresAuth || allowedRoles !== undefined
+
+    if (requiresAuth && !authStore.isAuthenticated()) {
+      authStore.logout()
+      return '/login'
+    }
+
+    if (to.path === '/login' && authStore.isAuthenticated()) {
+      return '/dashboard'
+    }
+
+    if (allowedRoles) {
+      if (!authStore.user || !allowedRoles.includes(authStore.user.role)) {
+        return '/acess-denied'
+      }
+    }
     return true
   })
 

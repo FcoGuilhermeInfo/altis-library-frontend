@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router';
+import { ROLES } from '@/constants/roles'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -18,8 +19,18 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
     },
     children: [
-      { path: 'dashboard', component: () => import('@/pages/IndexPage.vue') },
-  
+      { 
+        path: 'dashboard', 
+        component: () => import('@/pages/IndexPage.vue') ,
+        meta: {
+        roles: [ROLES.ADMIN, ROLES.USER],
+        },
+    },
+
+      {
+        path: 'acess-denied',
+        component: () => import('@/pages/AcessDeniedPage.vue'),
+      },  
     ],
   },
 

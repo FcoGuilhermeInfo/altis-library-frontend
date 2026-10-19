@@ -1,8 +1,15 @@
 
+import { ROLES } from '@/constants/roles'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { jwtDecode } from 'jwt-decode'
 import { authService } from '@/services/authService'
+import {
+  saveToken,
+  getToken,
+  clearToken,
+} from '@/utils/tokenStorage'
+
 import type {
   AuthenticatedUser,
   LoginRequest,
@@ -17,11 +24,27 @@ interface JwtPayload {
   exp: number
 }
 
+function isValidPayload(payload: JwtPayload): boolean {
+  return (
+    typeof payload.sub === 'string' &&
+    payload.sub.trim().length > 0 &&
+    typeof payload.userId === 'string' &&
+    payload.userId.trim().length > 0 &&
+    (payload.role === ROLES.ADMIN || payload.role === ROLES.USER) &&
+    typeof payload.exp === 'number' &&
+    Number.isFinite(payload.exp) &&
+    payload.exp * 1000 > Date.now()
+  )
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<AuthenticatedUser | null>(null)
   const token = ref<string | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
+
+  const isAdmin = computed(() => user.value?.role === ROLES.ADMIN)
+  const isUser = computed(() => user.value?.role === ROLES.USER)
 
   const isAuthenticated = () => {
     return user.value !== null && token.value !== null
@@ -33,19 +56,14 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response: LoginResponse = await authService.login(credentials)
-
       const payload = jwtDecode<JwtPayload>(response.token)
 
       if (
-        !payload.userId ||
-        !payload.sub ||
-        (payload.role !== 'ROLE_ADMIN' && payload.role !== 'ROLE_USER')
+        !isValidPayload(payload) ||
+        typeof response.user_id !== 'string' ||
+        response.user_id !== payload.userId
       ) {
         throw new Error('O token recebido possui dados inválidos.')
-      }
-
-      if (payload.exp * 1000 <= Date.now()) {
-        throw new Error('O token recebido já expirou.')
       }
 
       token.value = response.token
@@ -55,9 +73,12 @@ export const useAuthStore = defineStore('auth', () => {
         email: payload.sub,
         role: payload.role,
       }
+
+      saveToken(response.token)
     } catch (err: unknown) {
       user.value = null
       token.value = null
+      clearToken()
 
       if (err instanceof Error) {
         error.value = err.message
@@ -75,6 +96,35 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     token.value = null
     error.value = null
+
+    clearToken()
+  }
+
+  function restoreSession(): void {
+    const savedToken = getToken()
+
+    if (!savedToken) {
+      return
+    }
+
+    try {
+      const payload = jwtDecode<JwtPayload>(savedToken)
+
+      if (!isValidPayload(payload)) {
+        logout()
+        return
+      }
+
+      token.value = savedToken
+
+      user.value = {
+        id: payload.userId,
+        email: payload.sub,
+        role: payload.role,
+      }
+    } catch {
+      logout()
+    }
   }
 
   return {
@@ -83,7 +133,10 @@ export const useAuthStore = defineStore('auth', () => {
     loading,
     error,
     isAuthenticated,
+    isAdmin,
+    isUser,
     login,
     logout,
+    restoreSession,
   }
 })

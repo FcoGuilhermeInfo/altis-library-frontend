@@ -1,4 +1,5 @@
-export type UserRole = 'ROLE_ADMIN' | 'ROLE_USER'
+import type { ROLES } from '@/constants/roles'
+export type UserRole = (typeof ROLES)[keyof typeof ROLES]
 
 export interface LoginRequest {
     email: string

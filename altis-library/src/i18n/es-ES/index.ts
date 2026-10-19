@@ -32,5 +32,11 @@ export default {
         forgotPassword: "¿Olvidaste tu contraseña?",
         noAccount: "¿No tienes cuenta?",
         register: "Regístrate"
+    },
+
+    acessDenied: {
+        acessDenied: "Acceso denegado",
+        message: "No tienes permiso para acceder a esta página.",
+        return: "Volver a la página anterior"
     }
 };

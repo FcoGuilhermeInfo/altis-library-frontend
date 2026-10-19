@@ -32,5 +32,11 @@ export default {
         forgotPassword: "Esqueceu sua senha?",
         noAccount: "Não tem uma conta?",
         register: "Cadastre-se"
+    },
+
+    acessDenied: {
+        acessDenied: "Acesso Negado",
+        message: "Você não tem permissão para acessar esta página.",
+        return: "Voltar para a página anterior"
     }
 }
