@@ -20,5 +20,23 @@ export default {
         portuguese: "🇧🇷 Portuguese",
         spanish: "🇪🇸 Spanish",
         english: "🇺🇸 English"
+    },
+
+    login: {
+        login: "Login",
+        email: "Email",
+        password: "Password",
+        rememberMe: "Remember-me",
+        enter: "Enter",
+        or: "or",
+        forgotPassword: "Forgot your password?",
+        noAccount: "Don't have an account?",
+        register: "Sign up"
+    },
+
+    acessDenied: {
+        acessDenied: "Access Denied",
+        message: "You do not have permission to access this page.",
+        return: "Return to the previous page"
     }
 };

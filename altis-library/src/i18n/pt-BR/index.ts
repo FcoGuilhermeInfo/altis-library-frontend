@@ -1,3 +1,5 @@
+
+
 export default {
     common: {
         save: "Salvar"
@@ -18,5 +20,23 @@ export default {
         portuguese: "🇧🇷 Português",
         spanish: "🇪🇸 Espanhol",
         english: "🇺🇸 Inglês"
+    },
+
+    login: {
+        login: "Login",
+        email: "Email",
+        password: "Senha",
+        rememberMe: "Lembrar-me",
+        enter: "Entrar",
+        or: "ou",
+        forgotPassword: "Esqueceu sua senha?",
+        noAccount: "Não tem uma conta?",
+        register: "Cadastre-se"
+    },
+
+    acessDenied: {
+        acessDenied: "Acesso Negado",
+        message: "Você não tem permissão para acessar esta página.",
+        return: "Voltar para a página anterior"
     }
 }

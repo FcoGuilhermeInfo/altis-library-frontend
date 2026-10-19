@@ -3,11 +3,18 @@ import LanguageDialog from './LanguageDialog.vue';
 
 import { ref } from 'vue'
 
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore.js';
+
 const showLanguageDialog = ref(false)
 
 function handleMenuItem(item: typeof menuItems[number]) {
     if (item.action === 'language') {
         showLanguageDialog.value = true
+    }
+
+    if (item.action === 'logout') {
+        return handleLogout()
     }
 }
 
@@ -28,12 +35,19 @@ const menuItems = [
     },
     {
         label: 'menuprofile.logout',
-        to: '/login',
+        action: 'logout',
         icon: 'logout',
     },
 
 ]
 
+const router = useRouter()
+const authStore = useAuthStore()
+
+async function handleLogout(){
+    authStore.logout()
+    await router.replace('/login')
+}
 </script>
 
 <template>

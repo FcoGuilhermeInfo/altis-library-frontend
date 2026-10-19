@@ -1,12 +1,36 @@
 import type { RouteRecordRaw } from 'vue-router';
+import { ROLES } from '@/constants/roles'
 
 const routes: RouteRecordRaw[] = [
   {
+    path: "/",
+    redirect: '/login',
+  },
+
+  {
+    path: "/login",
+    component: () => import('@/pages/LoginPage.vue'),
+  },
+  
+  {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
+    meta: {
+      requiresAuth: true,
+    },
     children: [
-      { path: '', component: () => import('@/pages/IndexPage.vue') },
-      { path: 'second', component: () => import('@/pages/SecondPage.vue') },
+      { 
+        path: 'dashboard', 
+        component: () => import('@/pages/IndexPage.vue') ,
+        meta: {
+        roles: [ROLES.ADMIN, ROLES.USER],
+        },
+    },
+
+      {
+        path: 'acess-denied',
+        component: () => import('@/pages/AcessDeniedPage.vue'),
+      },  
     ],
   },
 

@@ -12,4 +12,5 @@
  *   readonly MY_OTHER_VAR: string;
  * }
  */
-interface ImportMetaEnv {}
+interface ImportMetaEnv {
+}
