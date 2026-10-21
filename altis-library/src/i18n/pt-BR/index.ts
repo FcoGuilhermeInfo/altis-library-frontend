@@ -58,6 +58,14 @@ export default {
         backToLogin: 'Voltar para a tela de login',
     },
 
+    resetPassword: {
+        title: 'Alterar Senha',
+        password: 'Senha',
+        confirmPassword: 'Confirmar Senha',
+        submit: 'Alterar',
+        back: 'Voltar',
+    },
+
 
     acessDenied: {
         acessDenied: "Acesso Negado",

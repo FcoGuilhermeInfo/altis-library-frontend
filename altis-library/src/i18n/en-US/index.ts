@@ -58,6 +58,13 @@ export default {
         backToLogin: 'Back to login',
     },
 
+    resetPassword: {
+        title: 'Change Password',
+        password: 'Password',
+        confirmPassword: 'Confirm Password',
+        submit: 'Change',
+        back: 'Back',
+    },
 
     acessDenied: {
         acessDenied: "Access Denied",

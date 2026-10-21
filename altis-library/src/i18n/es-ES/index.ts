@@ -58,6 +58,14 @@ export default {
         backToLogin: 'Volver al inicio de sesión',
     },
 
+    resetPassword: {
+        title: 'Cambiar contraseña',
+        password: 'Contraseña',
+        confirmPassword: 'Confirmar contraseña',
+        submit: 'Cambiar',
+        back: 'Volver',
+    },
+
 
     acessDenied: {
         acessDenied: "Acceso denegado",
