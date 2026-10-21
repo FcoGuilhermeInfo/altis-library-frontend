@@ -9,6 +9,9 @@ import {
     confirmPasswordRule,
 } from '@/utils/validationRules'
 import { useQuasar } from 'quasar';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n({ useScope: 'global'})
 
 const $q = useQuasar()
 const router = useRouter()
@@ -56,13 +59,13 @@ async function onSubmit() {
 
         $q.notify({
             type: 'positive',
-            message: 'Senha alterada com sucesso!',
-            caption: 'Entre com sua nova senha',
+            message: t('resetPassword.success'),
+            caption: t('resetPassword.successCaption'),
             position: 'top',
             timeout: 4000,
         })
     } catch {
-        submitError.value = 'Não foi possível alterar a senha. Tente novamente.'
+        submitError.value = t('resetPassword.error')
     } finally {
         loading.value = false
     }

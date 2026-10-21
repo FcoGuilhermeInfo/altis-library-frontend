@@ -64,6 +64,9 @@ export default {
         confirmPassword: 'Confirm Password',
         submit: 'Change',
         back: 'Back',
+        success: 'Password changed successfully!',
+        successCaption: 'Sign in with your new password.',
+        error: 'Unable to change your password. Please try again.',
     },
 
     acessDenied: {

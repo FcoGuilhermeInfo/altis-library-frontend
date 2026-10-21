@@ -64,6 +64,9 @@ export default {
         confirmPassword: 'Confirmar Senha',
         submit: 'Alterar',
         back: 'Voltar',
+        success: 'Senha alterada com sucesso!',
+        successCaption: 'Entre com sua nova senha.',
+        error: 'Não foi possível alterar a senha. Tente novamente.',
     },
 
 

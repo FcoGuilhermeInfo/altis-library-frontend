@@ -64,6 +64,9 @@ export default {
         confirmPassword: 'Confirmar contraseña',
         submit: 'Cambiar',
         back: 'Volver',
+        success: '¡Contraseña cambiada correctamente!',
+        successCaption: 'Inicia sesión con tu nueva contraseña.',
+        error: 'No se pudo cambiar la contraseña. Inténtalo de nuevo.',
     },
 
 
