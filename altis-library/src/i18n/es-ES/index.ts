@@ -58,6 +58,17 @@ export default {
         backToLogin: 'Volver al inicio de sesión',
     },
 
+    resetPassword: {
+        title: 'Cambiar contraseña',
+        password: 'Contraseña',
+        confirmPassword: 'Confirmar contraseña',
+        submit: 'Cambiar',
+        back: 'Volver',
+        success: '¡Contraseña cambiada correctamente!',
+        successCaption: 'Inicia sesión con tu nueva contraseña.',
+        error: 'No se pudo cambiar la contraseña. Inténtalo de nuevo.',
+    },
+
 
     acessDenied: {
         acessDenied: "Acceso denegado",

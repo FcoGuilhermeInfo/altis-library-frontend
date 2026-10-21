@@ -58,6 +58,17 @@ export default {
         backToLogin: 'Voltar para a tela de login',
     },
 
+    resetPassword: {
+        title: 'Alterar Senha',
+        password: 'Senha',
+        confirmPassword: 'Confirmar Senha',
+        submit: 'Alterar',
+        back: 'Voltar',
+        success: 'Senha alterada com sucesso!',
+        successCaption: 'Entre com sua nova senha.',
+        error: 'Não foi possível alterar a senha. Tente novamente.',
+    },
+
 
     acessDenied: {
         acessDenied: "Acesso Negado",

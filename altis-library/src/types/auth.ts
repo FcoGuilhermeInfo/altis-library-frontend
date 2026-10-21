@@ -19,3 +19,17 @@ export interface AuthenticatedUser {
     role: UserRole
 }
 
+export interface ForgotPasswordRequest {
+  email: string
+  cpf: string
+}
+
+export interface PasswordResetTokenResponse {
+  token: string
+}
+
+export interface ResetPasswordRequest {
+  token: string
+  newPassword: string
+  confirmPassword: string
+}
