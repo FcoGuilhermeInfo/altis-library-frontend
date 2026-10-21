@@ -8,7 +8,9 @@ import {
     passwordRule,
     confirmPasswordRule,
 } from '@/utils/validationRules'
+import { useQuasar } from 'quasar';
 
+const $q = useQuasar()
 const router = useRouter()
 
 const password = ref('')
@@ -51,6 +53,14 @@ async function onSubmit() {
         passwordResetStorage.clear()
 
         await router.replace('/login')
+
+        $q.notify({
+            type: 'positive',
+            message: 'Senha alterada com sucesso!',
+            caption: 'Entre com sua nova senha',
+            position: 'top',
+            timeout: 4000,
+        })
     } catch {
         submitError.value = 'Não foi possível alterar a senha. Tente novamente.'
     } finally {
