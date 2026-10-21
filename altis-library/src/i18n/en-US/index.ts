@@ -34,6 +34,31 @@ export default {
         register: "Sign up"
     },
 
+    register: {
+        title: "Register",
+        name: "Name",
+        birthDate: "Birth Date",
+        cpf: "CPF",
+        phone: "Phone",
+        address: "Address",
+        email: "Email",
+        password: "Password",
+        confirmPassword: "Confirm Password",
+        submit: "Register",
+        alreadyHaveAccount: "Already have an account?"
+    },
+
+         
+    forgotPassword: {
+        title: 'Forgot your password?',
+        email: 'Email',
+        cpf: 'CPF',
+        confirm: 'Confirm',
+        or: 'or',
+        backToLogin: 'Back to login',
+    },
+
+
     acessDenied: {
         acessDenied: "Access Denied",
         message: "You do not have permission to access this page.",
