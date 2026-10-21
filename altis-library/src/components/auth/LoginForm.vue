@@ -8,6 +8,7 @@ import {
   getRememberedEmail,
   clearRememberedEmail,
 } from '@/utils/rememberMe'
+import { requiredRule, emailRule } from '@/utils/validationRules'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -19,16 +20,6 @@ const password = ref('')
 const rememberMe = ref(Boolean(rememberedEmail))
 const showPassword = ref(false)
 
-const requiredRule = (value: string | null) =>
-  Boolean(value?.trim()) || 'Este campo é obrigatório.'
-
-const emailRule = (value: string | null) => {
-  if (!value?.trim()) return true
-
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-  return emailPattern.test(value) || 'Informe um e-mail válido.'
-}
 
 async function onSubmit() {
   try {
@@ -47,8 +38,19 @@ async function onSubmit() {
   } catch (error: unknown) {
     console.error('Falha ao realizar login:', error)
   }
+
+ 
+
+  
 }
 
+function goToRegister() {
+  void router.push('/register')
+}
+
+function goToForgotPassword() {
+  void router.push('/forgot-password')
+}
 </script>
 
 
@@ -123,12 +125,12 @@ async function onSubmit() {
       <q-separator />
     </div>
 
-    <q-btn flat no-caps :label="$t('login.forgotPassword')" class="forgot-password" type="button" />
+    <q-btn flat no-caps :label="$t('login.forgotPassword')" class="forgot-password" type="button" @click="goToForgotPassword" />
 
     <div class="register-text">
       <span>{{ $t('login.noAccount') }}</span>
 
-      <q-btn flat no-caps :label="$t('login.register')" class="register-button" type="button" />
+      <q-btn flat no-caps :label="$t('login.register')" class="register-button" type="button" @click="goToRegister" />
     </div>
   </div>
 </template>

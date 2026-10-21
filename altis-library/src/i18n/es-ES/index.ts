@@ -34,6 +34,31 @@ export default {
         register: "Regístrate"
     },
 
+    register: {
+      title: "Registro",
+        name: "Nombre",
+        birthDate: "Fecha de nacimiento",
+        cpf: "CPF",
+        phone: "Teléfono",
+        address: "Dirección",
+        email: "Email",
+        password: "Contraseña",
+        confirmPassword: "Confirmar contraseña",
+        submit: "Registrarse",
+        alreadyHaveAccount: "¿Ya tienes una cuenta?"
+    },
+
+
+    forgotPassword: {
+        title: '¿Olvidaste tu contraseña?',
+        email: 'Correo electrónico',
+        cpf: 'CPF',
+        confirm: 'Confirmar',
+        or: 'o',
+        backToLogin: 'Volver al inicio de sesión',
+    },
+
+
     acessDenied: {
         acessDenied: "Acceso denegado",
         message: "No tienes permiso para acceder a esta página.",
