@@ -1,5 +1,6 @@
 import { api } from '@/boot/axios'
-import type { RegisterRequest, UserResponse, PageResponse, } from '@/types/user'
+import type { RegisterRequest, UserResponse} from '@/types/user'
+import type { PageResponse } from '@/types/paginations'
 
 export const userService = {
     async register(data: RegisterRequest): Promise<void> {

@@ -54,7 +54,15 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
           roles: [ROLES.ADMIN],
           },
-},
+      },        
+      {
+        path: '/publishers',
+        component: () => import('@/pages/PublishersPage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN],
+        },
+      },
     ],
   },
 
