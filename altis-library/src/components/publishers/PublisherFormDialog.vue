@@ -1,6 +1,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { formatDateTime } from '@/utils/dateUtils'
 import type {
   PublisherRequest,
   PublisherResponse,
@@ -150,6 +151,40 @@ function onDelete() {
             </template>
           </q-input>
 
+
+          <div v-if="isEditing && publisher" class="publisher-dates">
+            <div class="date-item">
+              <q-icon
+                name="event"
+                size="22px"
+                color="primary"
+              />
+
+              <div>
+                <div class="date-label">Data de criação</div>
+                <div class="date-value">
+                  {{ formatDateTime(publisher.createdAt) }}
+                </div>
+              </div>
+            </div>
+
+            <div class="date-item">
+              <q-icon
+                name="update"
+                size="22px"
+                color="primary"
+              />
+
+              <div>
+                <div class="date-label">Última atualização</div>
+                <div class="date-value">
+                  {{ formatDateTime(publisher.updatedAt) }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+
           <div
             class="form-actions"
             :class="{ 'form-actions-edit': isEditing }"
@@ -234,6 +269,43 @@ function onDelete() {
 .publisher-input :deep(.q-field__label) {
   font-size: 17px;
 }
+
+
+.publisher-dates {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 12px;
+  padding: 20px 0;
+  border-top: 1px solid #ddd;
+}
+
+.date-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.date-label {
+  font-size: 14px;
+  color: #777;
+}
+
+.date-value {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0b5e69;
+}
+
+@media (max-width: 600px) {
+  .publisher-dates {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
 
 .form-actions {
   display: flex;

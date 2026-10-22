@@ -55,3 +55,19 @@ export function formatISODate(
 
     return `${day}/${month}/${year}`
 }
+
+
+export function formatDateTime(value: string): string {
+  if (!value) return '-'
+
+  const [datePart, timePart] = value.split('T')
+
+  if (!datePart || !timePart) return '-'
+
+  const [year, month, day] = datePart.split('-')
+  const time = timePart.slice(0, 5)
+
+  if (!year || !month || !day) return '-'
+
+  return `${day}/${month}/${year} às ${time}`
+}
