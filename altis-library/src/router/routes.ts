@@ -46,6 +46,15 @@ const routes: RouteRecordRaw[] = [
         path: 'acess-denied',
         component: () => import('@/pages/AcessDeniedPage.vue'),
       },  
+
+      {
+        path: '/users',
+        component: () => import('@/pages/UsersPage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN],
+          },
+},
     ],
   },
 
