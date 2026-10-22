@@ -7,7 +7,8 @@ import PublishersTable from '@/components/publishers/PublishersTable.vue'
 import { publisherService } from '@/services/publisherService'
 import type { PublisherResponse, PublisherRequest } from '@/types/publisher'
 import PublisherFormDialog from '@/components/publishers/PublisherFormDialog.vue'
-import axios from 'axios'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+
 
 const selectedPublisher = ref<PublisherResponse | null>(null)
 const showPublisherDialog = ref(false)
@@ -24,7 +25,6 @@ const loading = ref(false)
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(totalElements.value / 10)),
 )
-
 let requestId = 0
 
 async function loadPublishers() {
@@ -72,99 +72,118 @@ function openEditDialog(publisher: PublisherResponse) {
   showPublisherDialog.value = true
 }
 
-async function savePublisher(data: PublisherRequest){
-    savingPublisher.value = true
 
-    try {
-        if(selectedPublisher.value){
-            await publisherService.update(
-                selectedPublisher.value.id,
-                data,
-            )
+async function savePublisher(data: PublisherRequest) {
+  if (savingPublisher.value) return
 
-            $q.notify({
-                type: 'positive',
-                message: 'Editora atualizada com sucesso!'
-            })
-        } else {
-            await publisherService.create(data)
-
-            $q.notify({
-                type: 'positive',
-                message: 'Editora cadastrada com sucesso!',
-            })
-        }
-
-        showPublisherDialog.value = false
-
-        await loadPublishers()
-    } catch {
-        $q.notify({
-            type: 'negative',
-            message: 'Não foi possível salvar a editora.',
-        })
-    } finally {
-        savingPublisher.value = false
+  if (selectedPublisher.value) {
+    pendingAction.value = {
+      type: 'update',
+      id: selectedPublisher.value.id,
+      data,
     }
+
+    showConfirmDialog.value = true
+    return
+  }
+
+  savingPublisher.value = true
+
+  try {
+    await publisherService.create(data)
+
+    showPublisherDialog.value = false
+
+    $q.notify({
+      type: 'positive',
+      message: 'Editora cadastrada com sucesso!',
+    })
+
+    await loadPublishers()
+  } catch {
+    $q.notify({
+      type: 'negative',
+      message: 'Não foi possível cadastrar a editora.',
+    })
+  } finally {
+    savingPublisher.value = false
+  }
 }
 
 
 function deletePublisher(id: string) {
   if (savingPublisher.value) return
 
-  $q.dialog({
-    title: 'Excluir Editora',
-    message: 'Tem certeza que deseja excluir esta editora?',
-    cancel: {
-      label: 'Cancelar',
-      flat: true,
-      noCaps: true,
-    },
-    ok: {
-      label: 'Excluir',
-      color: 'negative',
-      noCaps: true,
-    },
-    persistent: true,
-  }).onOk(() => {
-    void confirmDeletePublisher(id)
-  })
+  pendingAction.value = {
+    type: 'delete',
+    id,
+  }
+
+  showConfirmDialog.value = true
 }
 
-async function confirmDeletePublisher(id: string) {
+
+type PendingAction =
+  | { type: 'update'; id: string; data: PublisherRequest }
+  | { type: 'delete'; id: string}
+
+const showConfirmDialog = ref(false)
+const pendingAction = ref<PendingAction | null>(null)
+
+const confirmMessage = computed(() =>
+  pendingAction.value?.type === 'delete'
+  ? 'Vocẽ tem certeza que deseja excluir todos os dados?'
+  : 'Você tem certeza que deseja realizar essas alterações?',
+)
+
+
+async function confirmPublisherAction() {
+  const action = pendingAction.value
+
+  if (!action || savingPublisher.value) return
+
   savingPublisher.value = true
 
   try {
-    await publisherService.delete(id)
+    if (action.type === 'update') {
+      await publisherService.update(
+        action.id,
+        action.data,
+      )
 
-    showPublisherDialog.value = false
-
-    $q.notify({
-      type: 'positive',
-      message: 'Editora excluída com sucesso!',
-    })
-
-    if (publishers.value.length === 1 && currentPage.value > 1) {
-      currentPage.value--
-    }
-
-    await loadPublishers()
-  } catch (error: unknown) {
-    if (
-      axios.isAxiosError(error) &&
-      error.response?.status === 409
-    ) {
       $q.notify({
-        type: 'negative',
-        message:
-          'Não é possível excluir uma editora que possui livros relacionados.',
+        type: 'positive',
+        message: 'Editora atualizada com sucesso!',
       })
     } else {
+      await publisherService.delete(action.id)
+
       $q.notify({
-        type: 'negative',
-        message: 'Não foi possível excluir a editora.',
+        type: 'positive',
+        message: 'Editora excluída com sucesso!',
       })
+
+      if (
+        publishers.value.length === 1 &&
+        currentPage.value > 1
+      ) {
+        currentPage.value--
+      }
     }
+
+    showConfirmDialog.value = false
+    showPublisherDialog.value = false
+    pendingAction.value = null
+    selectedPublisher.value = null
+
+    await loadPublishers()
+  } catch {
+    $q.notify({
+      type: 'negative',
+      message: action.type === 'delete'
+        ? 'Não foi possível excluir a editora. Verifique se existem livros relacionados.'
+        : 'Não foi possível atualizar a editora.',
+    })
   } finally {
     savingPublisher.value = false
   }
@@ -256,6 +275,19 @@ onMounted(() => {
         :loading="savingPublisher"
         @save="savePublisher"
         @delete="deletePublisher"
+    />
+
+
+    <ConfirmDialog
+      v-model="showConfirmDialog"
+      :message="confirmMessage"
+      :loading="savingPublisher"
+      @confirm="confirmPublisherAction"
+      @update:model-value="
+        (value) => {
+          if (!value) pendingAction = null
+        }
+      "
     />
 
   </q-page>
