@@ -34,13 +34,14 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
     },
     children: [
-      { 
-        path: 'dashboard', 
-        component: () => import('@/pages/IndexPage.vue') ,
-        meta: {
-        roles: [ROLES.ADMIN, ROLES.USER],
-        },
-    },
+      {
+         path: '/dashboard',
+        component: () => import('@/pages/DashboardPage.vue'),
+         meta: {
+          requiresAuth: true,
+           roles: [ROLES.ADMIN, ROLES.USER],
+         },
+      },
 
       {
         path: 'acess-denied',
