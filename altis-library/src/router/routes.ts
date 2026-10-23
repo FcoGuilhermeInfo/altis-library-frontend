@@ -63,6 +63,14 @@ const routes: RouteRecordRaw[] = [
           roles: [ROLES.ADMIN],
         },
       },
+      {
+        path: '/books',
+        component: () => import('@/pages/BooksPage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN],
+        },
+      },
     ],
   },
 
