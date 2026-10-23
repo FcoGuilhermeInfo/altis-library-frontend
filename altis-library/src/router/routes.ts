@@ -42,7 +42,14 @@ const routes: RouteRecordRaw[] = [
            roles: [ROLES.ADMIN, ROLES.USER],
          },
       },
-
+      {
+        path: '/profile',
+        component: () => import('@/pages/ProfilePage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN, ROLES.USER],
+        },
+      },
       {
         path: 'acess-denied',
         component: () => import('@/pages/AcessDeniedPage.vue'),

@@ -1,12 +1,43 @@
 <script setup lang="ts">
 import LanguageDialog from './LanguageDialog.vue';
-
-import { ref } from 'vue'
-
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore.js';
+import { ref, watch } from 'vue'
+import { userService } from '@/services/userService'
+
+
+
+const authStore = useAuthStore()
+
+const userName = ref('Usuário')
+
+watch(
+  () => authStore.user?.id,
+  async (userId) => {
+    if (!userId) {
+      userName.value = 'Usuário'
+      return
+    }
+
+    userName.value = 'Carregando...'
+
+    try {
+      const user = await userService.findById(userId)
+
+      if (authStore.user?.id !== userId) return
+
+      userName.value = user.name
+    } catch {
+      if (authStore.user?.id !== userId) return
+
+      userName.value = authStore.user?.email ?? 'Usuário'
+    }
+  },
+  { immediate: true },
+)
 
 const showLanguageDialog = ref(false)
+
 
 function handleMenuItem(item: typeof menuItems[number]) {
     if (item.action === 'language') {
@@ -16,10 +47,6 @@ function handleMenuItem(item: typeof menuItems[number]) {
     if (item.action === 'logout') {
         return handleLogout()
     }
-}
-
-const user = {
-    name: 'Usuario da Silva'
 }
 
 const menuItems = [
@@ -42,7 +69,6 @@ const menuItems = [
 ]
 
 const router = useRouter()
-const authStore = useAuthStore()
 
 async function handleLogout(){
     authStore.logout()
@@ -71,7 +97,7 @@ async function handleLogout(){
                     </q-avatar>
 
                     <q-item-label class="profile-name">
-                        {{ user.name }}
+                        {{ userName }}
                     </q-item-label>
                 </q-item-section>
             </q-item>
