@@ -48,6 +48,14 @@ const routes: RouteRecordRaw[] = [
       },  
 
       {
+        path: '/loans',
+        component: () => import('@/pages/LoansPage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN],
+        },
+      },
+      {
         path: '/users',
         component: () => import('@/pages/UsersPage.vue'),
         meta: {
