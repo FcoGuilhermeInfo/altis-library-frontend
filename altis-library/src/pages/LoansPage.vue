@@ -17,39 +17,32 @@ const { t } = useI18n({ useScope: 'global' });
 
 const pageSize = 10;
 
-// Empréstimos ativos
 const loans = ref<LoanResponse[]>([]);
 const search = ref<string | null>('');
 const currentPage = ref(1);
 const totalElements = ref(0);
 const loading = ref(false);
 
-// Últimos empréstimos finalizados
 const recentHistory = ref<LoanResponse[]>([]);
 const loadingRecentHistory = ref(false);
 
-// Histórico completo
 const showHistoryDialog = ref(false);
 const history = ref<LoanResponse[]>([]);
 const historyPage = ref(1);
 const historyTotalElements = ref(0);
 const loadingHistory = ref(false);
 
-// Registro de empréstimo
 const showCreateDialog = ref(false);
 const savingLoan = ref(false);
 
-// Detalhes e devolução
 const showDetailsDialog = ref(false);
 const selectedLoan = ref<LoanResponse | null>(null);
 const loadingDetails = ref(false);
 
-// Confirmação de devolução
 const showConfirmDialog = ref(false);
 const returningLoan = ref(false);
 const pendingReturnId = ref<string | null>(null);
 
-// Paginação
 const totalPages = computed(() => Math.max(1, Math.ceil(totalElements.value / pageSize)));
 
 const historyTotalPages = computed(() =>
@@ -59,7 +52,6 @@ const historyTotalPages = computed(() =>
 let loansRequestId = 0;
 let historyRequestId = 0;
 
-// Buscar empréstimos ativos
 async function loadLoans() {
   const currentRequest = ++loansRequestId;
   loading.value = true;
@@ -86,7 +78,6 @@ async function loadLoans() {
   }
 }
 
-// Buscar últimos empréstimos devolvidos
 async function loadRecentHistory() {
   loadingRecentHistory.value = true;
 
@@ -105,7 +96,6 @@ async function loadRecentHistory() {
   }
 }
 
-// Buscar histórico completo
 async function loadHistory() {
   const currentRequest = ++historyRequestId;
   loadingHistory.value = true;
@@ -132,7 +122,6 @@ async function loadHistory() {
   }
 }
 
-// Paginação de empréstimos ativos
 function changePage(page: number) {
   if (page === currentPage.value) return;
 
@@ -140,7 +129,6 @@ function changePage(page: number) {
   void loadLoans();
 }
 
-// Paginação do histórico
 function changeHistoryPage(page: number) {
   if (page === historyPage.value) return;
 
@@ -148,7 +136,6 @@ function changeHistoryPage(page: number) {
   void loadHistory();
 }
 
-// Abrir histórico completo
 function openHistory() {
   historyPage.value = 1;
   showHistoryDialog.value = true;
@@ -156,12 +143,10 @@ function openHistory() {
   void loadHistory();
 }
 
-// Abrir registro de empréstimo
 function openCreateDialog() {
   showCreateDialog.value = true;
 }
 
-// Registrar empréstimo
 async function saveLoan(data: LoanRequest) {
   if (savingLoan.value) return;
 
@@ -189,7 +174,6 @@ async function saveLoan(data: LoanRequest) {
   }
 }
 
-// Consultar detalhes do empréstimo
 async function viewDetails(id: string) {
   if (loadingDetails.value) return;
 
@@ -209,7 +193,6 @@ async function viewDetails(id: string) {
   }
 }
 
-// Solicitar confirmação de devolução
 function requestReturn(id: string) {
   if (returningLoan.value || showConfirmDialog.value) return;
 
@@ -217,14 +200,12 @@ function requestReturn(id: string) {
   showConfirmDialog.value = true;
 }
 
-// Cancelar confirmação
 function onConfirmDialogChange(value: boolean) {
   if (!value && !returningLoan.value) {
     pendingReturnId.value = null;
   }
 }
 
-// Confirmar devolução
 async function confirmReturn() {
   const id = pendingReturnId.value;
 
@@ -269,13 +250,11 @@ async function confirmReturn() {
   }
 }
 
-// Pesquisa por locatário
 watch(search, () => {
   currentPage.value = 1;
   void loadLoans();
 });
 
-// Carregar dados ao abrir a página
 onMounted(() => {
   void loadLoans();
   void loadRecentHistory();
@@ -284,7 +263,6 @@ onMounted(() => {
 
 <template>
   <q-page class="loans-page">
-    <!-- Empréstimos ativos -->
     <q-card flat class="loans-card">
       <q-card-section class="loans-toolbar">
         <q-input
@@ -349,7 +327,6 @@ onMounted(() => {
       </q-card-actions>
     </q-card>
 
-    <!-- Histórico recente -->
     <q-card flat class="history-card">
       <q-card-section class="history-header">
         <div class="history-title">
@@ -364,7 +341,6 @@ onMounted(() => {
       </q-card-section>
     </q-card>
 
-    <!-- Histórico completo -->
     <q-dialog v-model="showHistoryDialog" maximized>
       <q-card class="history-dialog">
         <q-card-section class="history-dialog-header">
@@ -390,10 +366,8 @@ onMounted(() => {
       </q-card>
     </q-dialog>
 
-    <!-- Registrar empréstimo -->
     <LoanFormDialog v-model="showCreateDialog" :loading="savingLoan" @save="saveLoan" />
 
-    <!-- Detalhes e devolução -->
     <LoanDetailsDialog
       v-model="showDetailsDialog"
       :loan="selectedLoan"
@@ -401,7 +375,6 @@ onMounted(() => {
       @return-book="requestReturn"
     />
 
-    <!-- Confirmação da devolução -->
     <ConfirmDialog
       v-model="showConfirmDialog"
       :message="$t('loans.returnPrompt')"

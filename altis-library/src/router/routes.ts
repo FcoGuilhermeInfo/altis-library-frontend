@@ -1,32 +1,32 @@
 import type { RouteRecordRaw } from 'vue-router';
-import { ROLES } from '@/constants/roles'
+import { ROLES } from '@/constants/roles';
 
 const routes: RouteRecordRaw[] = [
   {
-    path: "/",
+    path: '/',
     redirect: '/login',
   },
 
   {
-    path: "/login",
+    path: '/login',
     component: () => import('@/pages/LoginPage.vue'),
   },
 
   {
-    path: "/register",
+    path: '/register',
     component: () => import('@/pages/RegisterPage.vue'),
   },
 
   {
-  path: '/forgot-password',
-  component: () => import('@/pages/ForgotPasswordPage.vue'),
+    path: '/forgot-password',
+    component: () => import('@/pages/ForgotPasswordPage.vue'),
   },
-  
+
   {
     path: '/reset-password',
-    component: () => import('@/pages/ResetPasswordPage.vue')
+    component: () => import('@/pages/ResetPasswordPage.vue'),
   },
-  
+
   {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
@@ -35,12 +35,12 @@ const routes: RouteRecordRaw[] = [
     },
     children: [
       {
-         path: '/dashboard',
+        path: '/dashboard',
         component: () => import('@/pages/DashboardPage.vue'),
-         meta: {
+        meta: {
           requiresAuth: true,
-           roles: [ROLES.ADMIN, ROLES.USER],
-         },
+          roles: [ROLES.ADMIN, ROLES.USER],
+        },
       },
       {
         path: '/profile',
@@ -53,7 +53,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'acess-denied',
         component: () => import('@/pages/AcessDeniedPage.vue'),
-      },  
+      },
 
       {
         path: '/loans',
@@ -69,8 +69,8 @@ const routes: RouteRecordRaw[] = [
         meta: {
           requiresAuth: true,
           roles: [ROLES.ADMIN],
-          },
-      },        
+        },
+      },
       {
         path: '/publishers',
         component: () => import('@/pages/PublishersPage.vue'),
@@ -90,14 +90,10 @@ const routes: RouteRecordRaw[] = [
     ],
   },
 
-  // Always leave this as last one,
-  // but you can also remove it
   {
     path: '/:catchAll(.*)*',
     component: () => import('@/pages/ErrorNotFound.vue'),
   },
 ];
-
-
 
 export default routes;

@@ -1,60 +1,63 @@
-import { defineBoot } from '#q-app'
-import { useAuthStore } from '@/stores/authStore'
-import axios from 'axios'
+import { defineBoot } from '#q-app';
+import { useAuthStore } from '@/stores/authStore';
+import { markSessionErrorHandled } from '@/utils/apiErrors';
+import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.QCLI_API_URL
-})
+  baseURL: import.meta.env.QCLI_API_URL,
+});
 
-export default defineBoot(( { store, router}) => {
-  const authStore = useAuthStore(store)
+let sessionRedirectInProgress = false;
 
-  // REQUEST
+export default defineBoot(({ store, router }) => {
+  const authStore = useAuthStore(store);
+
   api.interceptors.request.use((config) => {
     if (authStore.token) {
-      config.headers.set(
-        'Authorization',
-        `Bearer ${authStore.token}`,
-      )
-    }
-    
-    return config
-  })
-
-// RESPONSE
-api.interceptors.response.use(
-  (response) => response,
-
-  async (error: unknown) => {
-    if (!axios.isAxiosError(error)) {
-      throw error instanceof Error
-      ? error
-      : new Error(String(error))
+      config.headers.set('Authorization', `Bearer ${authStore.token}`);
     }
 
-    const status = error.response?.status
-    const requestPath = error.config?.url?.split('?')[0] || ''
+    return config;
+  });
 
-    if (requestPath === '/auth//login') {
-      return Promise.reject(error)
-    }
+  api.interceptors.response.use(
+    (response) => response,
+    async (error: unknown) => {
+      if (!axios.isAxiosError(error)) throw error;
 
-    if (status === 401) {
-      authStore.logout()
+      const status = error.response?.status;
+      const requestPath = error.config?.url?.split('?')[0] ?? '';
+      const isPublicAuthRequest = [
+        '/auth/login',
+        '/auth/forgot-password',
+        '/auth/reset-password',
+      ].includes(requestPath);
 
-      if (router.currentRoute.value.path !== '/login') {
-        await router.replace('/acess-denied ')
+      const currentRoute = router.currentRoute.value;
+      const routeRequiresAuth = currentRoute.matched.some((record) => record.meta.requiresAuth);
+
+      if (
+        status === 401 &&
+        !isPublicAuthRequest &&
+        !sessionRedirectInProgress &&
+        (authStore.token || routeRequiresAuth)
+      ) {
+        markSessionErrorHandled(error);
+        authStore.expireSession();
+        if (currentRoute.path !== '/login') {
+          sessionRedirectInProgress = true;
+          try {
+            await router.replace('/login');
+          } finally {
+            sessionRedirectInProgress = false;
+          }
+        }
+      } else if (status === 403 && routeRequiresAuth && currentRoute.path !== '/acess-denied') {
+        await router.replace('/acess-denied');
       }
-    }
 
-    if (status === 403) {
-      if (router.currentRoute.value.path !== '/acess-denied') {
-        await router.replace('/acess-denied')
-      }
-    }
-     
-    return Promise.reject(error)
-  },
-)
-})
-export { api }
+      throw error;
+    },
+  );
+});
+export { api };

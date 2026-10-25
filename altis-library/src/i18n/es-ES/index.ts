@@ -91,6 +91,7 @@ export default {
   },
   validation: {
     required: 'Este campo es obligatorio',
+    serverField: 'Revisa este campo.',
     email: 'Introduce un correo electrónico válido',
     gmail: "El correo electrónico debe terminar en {'@'}gmail.com.",
     nameLength: 'El nombre debe tener como máximo 50 caracteres.',
@@ -117,6 +118,14 @@ export default {
     notFound: 'No se encontró el registro solicitado.',
     server: 'El servidor no está disponible. Inténtalo de nuevo más tarde.',
     rateLimit: 'Demasiados intentos. Espera un momento e inténtalo de nuevo.',
+    conflict: 'Los datos proporcionados entran en conflicto con un registro o una regla existente.',
+    validation: 'Revisa los datos introducidos e inténtalo de nuevo.',
+    timeout: 'La solicitud agotó el tiempo de espera. Inténtalo de nuevo.',
+    serviceUnavailable: 'El servicio no está disponible temporalmente. Inténtalo más tarde.',
+    unknown: 'No se pudo determinar la causa del error. Inténtalo de nuevo.',
+    canceled: 'La solicitud fue cancelada.',
+    unexpectedResponse: 'El servidor devolvió una respuesta inesperada. Inténtalo más tarde.',
+    sessionExpired: 'Tu sesión ha caducado. Vuelve a iniciar sesión.',
   },
   users: {
     search: 'Buscar usuarios por nombre',
