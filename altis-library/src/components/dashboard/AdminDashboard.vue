@@ -57,7 +57,6 @@ onMounted(() => {
     </div>
 
     <template v-else-if="dashboard">
-      <!-- Indicadores gerais -->
       <q-card flat class="dashboard-panel statistics-panel">
         <q-card-section class="statistics-grid">
           <div class="stat-card">
@@ -129,10 +128,8 @@ onMounted(() => {
         </q-card-section>
       </q-card>
 
-      <!-- Informações dos empréstimos -->
       <q-card flat class="dashboard-panel details-panel">
         <q-card-section class="details-grid">
-          <!-- Último livro emprestado -->
           <div class="detail-card">
             <h2 class="detail-title">
               {{ $t('dashboard.lastBook') }}

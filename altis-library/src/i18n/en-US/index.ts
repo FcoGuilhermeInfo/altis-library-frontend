@@ -91,6 +91,7 @@ export default {
   },
   validation: {
     required: 'This field is required',
+    serverField: 'Check this field.',
     email: 'Enter a valid email address',
     gmail: "The email address must end in {'@'}gmail.com.",
     nameLength: 'The name must contain at most 50 characters.',
@@ -117,6 +118,14 @@ export default {
     notFound: 'The requested record was not found.',
     server: 'The server is unavailable. Please try again later.',
     rateLimit: 'Too many attempts. Wait a moment and try again.',
+    conflict: 'The submitted data conflicts with an existing record or rule.',
+    validation: 'Check the information entered and try again.',
+    timeout: 'The request timed out. Please try again.',
+    serviceUnavailable: 'The service is temporarily unavailable. Please try again later.',
+    unknown: 'The cause of the failure could not be determined. Please try again.',
+    canceled: 'The request was canceled.',
+    unexpectedResponse: 'The server returned an unexpected response. Please try again later.',
+    sessionExpired: 'Your session has expired. Please sign in again.',
   },
   users: {
     search: 'Search users by name',

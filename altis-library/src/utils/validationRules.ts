@@ -12,7 +12,21 @@ export const gmailRule = (value: string) =>
 
 export const nameRule = (value: string) => value.trim().length <= 50 || t('validation.nameLength');
 
-export const cpfRule = (value: string) => /^\d{10,11}$/.test(value) || t('validation.cpf');
+export const cpfRule = (value: string) => {
+  if (!/^\d{11}$/.test(value) || /^([\d])\1{10}$/.test(value)) return t('validation.cpf');
+
+  const digits = value.split('').map(Number);
+  const firstCheck = digits
+    .slice(0, 9)
+    .reduce((sum, digit, index) => sum + digit * (10 - index), 0);
+  const firstDigit = ((firstCheck * 10) % 11) % 10;
+  const secondCheck = digits
+    .slice(0, 10)
+    .reduce((sum, digit, index) => sum + digit * (11 - index), 0);
+  const secondDigit = ((secondCheck * 10) % 11) % 10;
+
+  return (digits[9] === firstDigit && digits[10] === secondDigit) || t('validation.cpf');
+};
 
 export const phoneRule = (value: string) =>
   !value?.trim() || /^\d{10,11}$/.test(value) || t('validation.phone');

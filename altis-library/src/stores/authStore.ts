@@ -7,6 +7,7 @@ import { ref, computed } from 'vue';
 import { jwtDecode } from 'jwt-decode';
 import { authService } from '@/services/authService';
 import { saveToken, getToken, clearToken } from '@/utils/tokenStorage';
+import { unexpectedResponse } from '@/utils/apiResponses';
 
 import type { AuthenticatedUser, LoginRequest, LoginResponse, UserRole } from '@/types/auth';
 
@@ -57,7 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
         typeof response.user_id !== 'string' ||
         response.user_id !== payload.userId
       ) {
-        throw new Error('O token recebido possui dados inválidos.');
+        unexpectedResponse();
       }
 
       token.value = response.token;
@@ -87,6 +88,13 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null;
     errorKey.value = null;
 
+    clearToken();
+  }
+
+  function expireSession(): void {
+    user.value = null;
+    token.value = null;
+    errorKey.value = 'errors.sessionExpired';
     clearToken();
   }
 
@@ -127,6 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
     isUser,
     login,
     logout,
+    expireSession,
     restoreSession,
   };
 });
