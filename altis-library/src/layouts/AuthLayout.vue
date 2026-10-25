@@ -1,32 +1,32 @@
-<script setup lang="ts"> 
-    withDefaults(
-        defineProps<{
-            reverse?: boolean
-        }>(),
-        {
-            reverse: false,
-        },
-    )
+<script setup lang="ts">
+withDefaults(
+  defineProps<{
+    reverse?: boolean;
+  }>(),
+  {
+    reverse: false,
+  },
+);
 </script>
 
 <template>
-    <q-layout view="lHh Lpr lFf" class="auth-layout">
-        <q-page-container>
-            <q-page class="auth-page" :class="{  'auth-page-reverse': reverse }" >
-                <section class="auth-brand">
-                    <div class="brand-content">
-                        <img src="@/assets/lokbooks.svg" alt="Símbolo LokBooks" class="auth-logo" />
+  <q-layout view="lHh Lpr lFf" class="auth-layout">
+    <q-page-container>
+      <q-page class="auth-page" :class="{ 'auth-page-reverse': reverse }">
+        <section class="auth-brand">
+          <div class="brand-content">
+            <img src="@/assets/lokbooks.svg" :alt="$t('common.logo')" class="auth-logo" />
 
-                        <h2 class="brand-name">LokBooks</h2>
-                    </div>
-                </section>
+            <h2 class="brand-name">LokBooks</h2>
+          </div>
+        </section>
 
-                <section class="auth-content">
-                    <slot />
-                </section>
-            </q-page>
-        </q-page-container>
-    </q-layout>
+        <section class="auth-content">
+          <slot />
+        </section>
+      </q-page>
+    </q-page-container>
+  </q-layout>
 </template>
 
 <style scoped>

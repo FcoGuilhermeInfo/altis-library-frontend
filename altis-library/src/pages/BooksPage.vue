@@ -1,216 +1,206 @@
-
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useQuasar } from 'quasar'
+import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
+import { useI18n } from 'vue-i18n';
+import { computed, onMounted, ref, watch } from 'vue';
+import { notifyLocalized } from '@/utils/localizedNotify';
 
-import BooksTable from '@/components/books/BooksTable.vue'
-import { bookService } from '@/services/bookService'
-import type { BookResponse } from '@/types/book'
-import BookFormDialog from '@/components/books/BookFormDialog.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import BooksTable from '@/components/books/BooksTable.vue';
+import { bookService } from '@/services/bookService';
+import type { BookResponse } from '@/types/book';
+import BookFormDialog from '@/components/books/BookFormDialog.vue';
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 
-import type { BookRequest } from '@/types/book'
+import type { BookRequest } from '@/types/book';
 
-const $q = useQuasar()
+const { t } = useI18n({ useScope: 'global' });
 
-const books = ref<BookResponse[]>([])
-const search = ref<string | null>('')
-const currentPage = ref(1)
-const totalElements = ref(0)
-const loading = ref(false)
+const books = ref<BookResponse[]>([]);
+const search = ref<string | null>('');
+const currentPage = ref(1);
+const totalElements = ref(0);
+const loading = ref(false);
 
-const pageSize = 10
+const pageSize = 10;
 
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(totalElements.value / pageSize)),
-)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalElements.value / pageSize)));
 
-const showBookDialog = ref(false)
-const selectedBook = ref<BookResponse | null>(null)
+const showBookDialog = ref(false);
+const selectedBook = ref<BookResponse | null>(null);
 
-const savingBook = ref(false)
-const showConfirmDialog = ref(false)
+const savingBook = ref(false);
+const showConfirmDialog = ref(false);
 
 type PendingBookAction =
-  | { type: 'update'; id: string; data: BookRequest }
-  | { type: 'delete'; id: string }
+  { type: 'update'; id: string; data: BookRequest } | { type: 'delete'; id: string };
 
-const pendingAction = ref<PendingBookAction | null>(null)
+const pendingAction = ref<PendingBookAction | null>(null);
 
 const confirmMessage = computed(() =>
-  pendingAction.value?.type === 'delete'
-    ? 'Você tem certeza que deseja excluir todos os dados?'
-    : 'Você tem certeza que deseja realizar essas alterações?',
-)
+  pendingAction.value?.type === 'delete' ? t('common.confirmDelete') : t('common.confirmUpdate'),
+);
 
-let requestId = 0
+let requestId = 0;
 
 async function loadBooks() {
-  const currentRequest = ++requestId
-  loading.value = true
+  const currentRequest = ++requestId;
+  loading.value = true;
 
   try {
-    const response = await bookService.findAll(
-      search.value ?? '',
-      currentPage.value,
-      pageSize,
-    )
+    const response = await bookService.findAll(search.value ?? '', currentPage.value, pageSize);
 
-    if (currentRequest !== requestId) return
+    if (currentRequest !== requestId) return;
 
-    books.value = response.content
-    totalElements.value = response.totalElements
-  } catch {
-    if (currentRequest !== requestId) return
+    books.value = response.content;
+    totalElements.value = response.totalElements;
+  } catch (error: unknown) {
+    reportApiError(error);
+    if (currentRequest !== requestId) return;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível carregar os livros.',
-    })
+      message: t(getApiErrorKey(error, 'books.loadError')),
+    }));
   } finally {
     if (currentRequest === requestId) {
-      loading.value = false
+      loading.value = false;
     }
   }
 }
 
 function changePage(page: number) {
-  if (page === currentPage.value) return
+  if (page === currentPage.value) return;
 
-  currentPage.value = page
-  void loadBooks()
+  currentPage.value = page;
+  void loadBooks();
 }
 
 function openCreateDialog() {
-  selectedBook.value = null
-  showBookDialog.value = true
+  selectedBook.value = null;
+  showBookDialog.value = true;
 }
 
 function openEditDialog(book: BookResponse) {
-  selectedBook.value = book
-  showBookDialog.value = true
+  selectedBook.value = book;
+  showBookDialog.value = true;
 }
 
-
 async function saveBook(data: BookRequest) {
-  if (savingBook.value || showConfirmDialog.value) return
+  if (savingBook.value || showConfirmDialog.value) return;
 
   if (selectedBook.value) {
     pendingAction.value = {
       type: 'update',
       id: selectedBook.value.id,
       data,
-    }
+    };
 
-    showConfirmDialog.value = true
-    return
+    showConfirmDialog.value = true;
+    return;
   }
 
-  savingBook.value = true
+  savingBook.value = true;
 
   try {
-    await bookService.create(data)
+    await bookService.create(data);
 
-    showBookDialog.value = false
+    showBookDialog.value = false;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'positive',
-      message: 'Livro cadastrado com sucesso!',
-    })
+      message: t('books.created'),
+    }));
 
-    await loadBooks()
-  } catch {
-    $q.notify({
+    await loadBooks();
+  } catch (error: unknown) {
+    reportApiError(error);
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível cadastrar o livro.',
-    })
+      message: t(getApiErrorKey(error, 'books.createError')),
+    }));
   } finally {
-    savingBook.value = false
+    savingBook.value = false;
   }
 }
 
 function deleteBook(id: string) {
-  if (savingBook.value || showConfirmDialog.value) return
+  if (savingBook.value || showConfirmDialog.value) return;
 
   pendingAction.value = {
     type: 'delete',
     id,
-  }
+  };
 
-  showConfirmDialog.value = true
+  showConfirmDialog.value = true;
 }
 
-
 async function confirmBookAction() {
-  const action = pendingAction.value
+  const action = pendingAction.value;
 
-  if (!action || savingBook.value) return
+  if (!action || savingBook.value) return;
 
-  savingBook.value = true
+  savingBook.value = true;
 
   try {
     if (action.type === 'update') {
-      await bookService.update(action.id, action.data)
+      await bookService.update(action.id, action.data);
 
-      $q.notify({
+      notifyLocalized(() => ({
         type: 'positive',
-        message: 'Livro atualizado com sucesso!',
-      })
+        message: t('books.updated'),
+      }));
     } else {
-      await bookService.delete(action.id)
+      await bookService.delete(action.id);
 
-      $q.notify({
+      notifyLocalized(() => ({
         type: 'positive',
-        message: 'Livro excluído com sucesso!',
-      })
+        message: t('books.deleted'),
+      }));
 
-      if (
-        books.value.length === 1 &&
-        currentPage.value > 1
-      ) {
-        currentPage.value--
+      if (books.value.length === 1 && currentPage.value > 1) {
+        currentPage.value--;
       }
     }
 
-    showConfirmDialog.value = false
-    showBookDialog.value = false
-    pendingAction.value = null
-    selectedBook.value = null
+    showConfirmDialog.value = false;
+    showBookDialog.value = false;
+    pendingAction.value = null;
+    selectedBook.value = null;
 
-    await loadBooks()
-  } catch {
-    $q.notify({
+    await loadBooks();
+  } catch (error: unknown) {
+    reportApiError(error);
+    notifyLocalized(() => ({
       type: 'negative',
-      message: action.type === 'delete'
-        ? 'Não foi possível excluir o livro. Verifique se existem empréstimos relacionados.'
-        : 'Não foi possível atualizar o livro. Verifique os dados e a quantidade de exemplares.',
-    })
+      message:
+        action.type === 'delete'
+          ? t(getApiErrorKey(error, 'books.deleteError'))
+          : t(getApiErrorKey(error, 'books.updateError')),
+    }));
   } finally {
-    savingBook.value = false
+    savingBook.value = false;
   }
 }
 
 function onConfirmDialogChange(value: boolean) {
   if (!value) {
-    pendingAction.value = null
+    pendingAction.value = null;
   }
 }
 
-
 watch(search, () => {
-  currentPage.value = 1
-  void loadBooks()
-})
+  currentPage.value = 1;
+  void loadBooks();
+});
 
 onMounted(() => {
-  void loadBooks()
-})
+  void loadBooks();
+});
 </script>
 
 <template>
   <q-page class="books-page">
     <h1 class="books-title">
-      Livros
+      {{ $t('menu.books') }}
     </h1>
 
     <q-card flat class="books-card">
@@ -222,7 +212,7 @@ onMounted(() => {
           rounded
           clearable
           debounce="400"
-          placeholder="Buscar Livro por Nome"
+          :placeholder="$t('books.search')"
           class="books-search"
         >
           <template #append>
@@ -234,7 +224,7 @@ onMounted(() => {
           unelevated
           no-caps
           icon="add"
-          label="Cadastrar novo livro"
+          :label="$t('books.createNew')"
           class="create-button"
           @click="openCreateDialog"
         />
@@ -250,16 +240,19 @@ onMounted(() => {
         />
       </q-card-section>
 
-      <q-card-actions
-        align="between"
-        class="pagination-section"
-      >
+      <q-card-actions align="between" class="pagination-section">
         <span class="pagination-info">
-          Mostrando
-          {{ totalElements === 0 ? 0 : (currentPage - 1) * pageSize + 1 }}
-          à
-          {{ Math.min(currentPage * pageSize, totalElements) }}
-          de {{ totalElements }} livros
+          {{
+            $t(
+              'pagination.books',
+              {
+                start: $n(totalElements === 0 ? 0 : (currentPage - 1) * pageSize + 1),
+                end: $n(Math.min(currentPage * pageSize, totalElements)),
+                total: $n(totalElements),
+              },
+              totalElements,
+            )
+          }}
         </span>
 
         <q-pagination
@@ -275,23 +268,21 @@ onMounted(() => {
       </q-card-actions>
     </q-card>
 
-   
     <BookFormDialog
-    v-model="showBookDialog"
-    :book="selectedBook"
-    :loading="savingBook"
-    @save="saveBook"
-    @delete="deleteBook"
+      v-model="showBookDialog"
+      :book="selectedBook"
+      :loading="savingBook"
+      @save="saveBook"
+      @delete="deleteBook"
     />
 
     <ConfirmDialog
-    v-model="showConfirmDialog"
-    :message="confirmMessage"
-    :loading="savingBook"
-    @confirm="confirmBookAction"
-    @update:model-value="onConfirmDialogChange"
+      v-model="showConfirmDialog"
+      :message="confirmMessage"
+      :loading="savingBook"
+      @confirm="confirmBookAction"
+      @update:model-value="onConfirmDialogChange"
     />
-
   </q-page>
 </template>
 

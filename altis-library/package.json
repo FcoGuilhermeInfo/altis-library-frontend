@@ -12,7 +12,8 @@
     "dev": "quasar dev",
     "build": "quasar build",
     "typecheck": "vue-tsc --noEmit",
-    "postinstall": "quasar prepare --silent"
+    "postinstall": "quasar prepare --silent",
+    "test:i18n": "node --import ./tests/source-loader.mjs tests/i18n.test.mjs"
   },
   "dependencies": {
     "@quasar/extras": "^2.1.0",

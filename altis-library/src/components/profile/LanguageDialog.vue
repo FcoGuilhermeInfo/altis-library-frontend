@@ -1,70 +1,70 @@
 <script setup lang="ts">
-
 import { useI18n } from 'vue-i18n';
-import { ref } from 'vue'
+import { ref } from 'vue';
 
-const selectedLanguage = ref ('pt-BR')
-
-const { locale } = useI18n()
+const { locale } = useI18n({ useScope: 'global' });
+const selectedLanguage = ref(locale.value);
+function syncSelection() {
+  selectedLanguage.value = locale.value;
+}
 
 function changeLanguage() {
-    locale.value = selectedLanguage.value
+  locale.value = selectedLanguage.value;
 }
 </script>
 
 <template>
-    <q-dialog>
-        <q-card class="language-dialog">
-            <q-card-section class="dialog-header">
-                <q-card-label class="dialog-title">
-                    {{ $t('menuprofile.languages') }}
-                </q-card-label>
+  <q-dialog @before-show="syncSelection">
+    <q-card class="language-dialog">
+      <q-card-section class="dialog-header">
+        <q-card-label class="dialog-title">
+          {{ $t('menuprofile.languages') }}
+        </q-card-label>
 
-                <q-btn
-                    flat
-                    round
-                    dense
-                    icon="close"
-                    color="white"
-                    v-close-popup
-                />
+        <q-btn
+          flat
+          round
+          dense
+          icon="close"
+          :aria-label="$t('common.close')"
+          color="white"
+          v-close-popup
+        />
+      </q-card-section>
+      <q-card-section class="language-options">
+        <q-radio
+          v-model="selectedLanguage"
+          val="pt-BR"
+          :label="$t('menuprofile.portuguese')"
+          color="white"
+        />
 
-            </q-card-section>
-            <q-card-section class="language-options">
+        <q-radio
+          v-model="selectedLanguage"
+          val="es-ES"
+          :label="$t('menuprofile.spanish')"
+          color="white"
+        />
 
-                <q-radio
-                    v-model="selectedLanguage"
-                    val="pt-BR"
-                    :label="$t('menuprofile.portuguese')"
-                    color="white"
-                />
+        <q-radio
+          v-model="selectedLanguage"
+          val="en-US"
+          :label="$t('menuprofile.english')"
+          color="white"
+        />
+      </q-card-section>
 
-                <q-radio 
-                    v-model="selectedLanguage"
-                    val="es-ES"
-                    :label="$t('menuprofile.spanish')"
-                    color="white"
-                    />
-
-                <q-radio 
-                    v-model="selectedLanguage"
-                    val="en-US"
-                    :label="$t('menuprofile.english')"
-                    color="white"
-                />
-            </q-card-section>
-
-            <q-card-actions align="center">
-                <q-btn
-                    unelevated
-                    rounded
-                    class="btn-save"
-                    :label=" $t('common.save')"
-                    @click="changeLanguage"
-                />
-            </q-card-actions>
-        </q-card>
-    </q-dialog>
+      <q-card-actions align="center">
+        <q-btn
+          unelevated
+          rounded
+          class="btn-save"
+          :label="$t('common.save')"
+          @click="changeLanguage"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>
 
 <style scoped>

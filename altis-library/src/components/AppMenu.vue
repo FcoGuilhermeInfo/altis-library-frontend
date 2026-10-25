@@ -3,41 +3,40 @@ import { computed } from 'vue';
 import { ROLES } from '@/constants/roles';
 import { useAuthStore } from '@/stores/authStore';
 
-
-const authStore = useAuthStore()
+const authStore = useAuthStore();
 
 const menuItems = [
   {
-    label: 'Dashboard',
+    label: 'menu.dashboard',
     to: '/dashboard',
     icon: 'home',
-    roles: [ROLES.ADMIN, ROLES.USER]
+    roles: [ROLES.ADMIN, ROLES.USER],
   },
   {
     label: 'menu.loans',
     to: '/loans',
     icon: 'handshake',
-    roles: [ROLES.ADMIN]
+    roles: [ROLES.ADMIN],
   },
   {
     label: 'menu.users',
     to: '/users',
     icon: 'people',
-    roles: [ROLES.ADMIN]
+    roles: [ROLES.ADMIN],
   },
   {
     label: 'menu.publishers',
     to: '/publishers',
     icon: 'business',
-    roles: [ROLES.ADMIN]
+    roles: [ROLES.ADMIN],
   },
   {
     label: 'menu.books',
     to: '/books',
     icon: 'menu_book',
-    roles: [ROLES.ADMIN]
+    roles: [ROLES.ADMIN],
   },
-]
+];
 
 const visibleMenuItems = computed(() => {
   const userRole = authStore.user?.role;
@@ -46,7 +45,7 @@ const visibleMenuItems = computed(() => {
     return [];
   }
 
-  return menuItems.filter(item => item.roles.some(allowedRole => allowedRole === userRole));
+  return menuItems.filter((item) => item.roles.some((allowedRole) => allowedRole === userRole));
 });
 </script>
 
@@ -59,14 +58,10 @@ const visibleMenuItems = computed(() => {
       :to="item.to"
       active-class="menu-item-active"
       class="menu-item"
-      :class="{ 'dashboard-item': index === 0}"
+      :class="{ 'dashboard-item': index === 0 }"
     >
       <q-item-section avatar>
-        <q-icon
-          :name="item.icon"
-          size="30px"
-    
-        />
+        <q-icon :name="item.icon" size="30px" />
       </q-item-section>
 
       <q-item-section>

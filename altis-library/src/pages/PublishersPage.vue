@@ -1,209 +1,192 @@
-
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useQuasar } from 'quasar'
+import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
+import { useI18n } from 'vue-i18n';
+import { computed, onMounted, ref, watch } from 'vue';
+import { notifyLocalized } from '@/utils/localizedNotify';
 
-import PublishersTable from '@/components/publishers/PublishersTable.vue'
-import { publisherService } from '@/services/publisherService'
-import type { PublisherResponse, PublisherRequest } from '@/types/publisher'
-import PublisherFormDialog from '@/components/publishers/PublisherFormDialog.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import PublishersTable from '@/components/publishers/PublishersTable.vue';
+import { publisherService } from '@/services/publisherService';
+import type { PublisherResponse, PublisherRequest } from '@/types/publisher';
+import PublisherFormDialog from '@/components/publishers/PublisherFormDialog.vue';
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 
+const { t } = useI18n({ useScope: 'global' });
 
-const selectedPublisher = ref<PublisherResponse | null>(null)
-const showPublisherDialog = ref(false)
-const savingPublisher = ref(false)
+const selectedPublisher = ref<PublisherResponse | null>(null);
+const showPublisherDialog = ref(false);
+const savingPublisher = ref(false);
 
-const $q = useQuasar()
+const publishers = ref<PublisherResponse[]>([]);
+const search = ref<string | null>('');
+const currentPage = ref(1);
+const totalElements = ref(0);
+const loading = ref(false);
 
-const publishers = ref<PublisherResponse[]>([])
-const search = ref<string | null>('')
-const currentPage = ref(1)
-const totalElements = ref(0)
-const loading = ref(false)
-
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(totalElements.value / 10)),
-)
-let requestId = 0
+const totalPages = computed(() => Math.max(1, Math.ceil(totalElements.value / 10)));
+let requestId = 0;
 
 async function loadPublishers() {
-  const currentRequest = ++requestId
-  loading.value = true
+  const currentRequest = ++requestId;
+  loading.value = true;
 
   try {
-    const response = await publisherService.findAll(
-      search.value ?? '',
-      currentPage.value,
-      10,
-    )
+    const response = await publisherService.findAll(search.value ?? '', currentPage.value, 10);
 
-    if (currentRequest !== requestId) return
+    if (currentRequest !== requestId) return;
 
-    publishers.value = response.content
-    totalElements.value = response.totalElements
-  } catch {
-    if (currentRequest !== requestId) return
+    publishers.value = response.content;
+    totalElements.value = response.totalElements;
+  } catch (error: unknown) {
+    reportApiError(error);
+    if (currentRequest !== requestId) return;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível carregar as editoras.',
-    })
+      message: t(getApiErrorKey(error, 'publishers.loadError')),
+    }));
   } finally {
     if (currentRequest === requestId) {
-      loading.value = false
+      loading.value = false;
     }
   }
 }
 
 function changePage(page: number) {
-  currentPage.value = page
-  void loadPublishers()
+  currentPage.value = page;
+  void loadPublishers();
 }
 
-
 function openCreateDialog() {
-  selectedPublisher.value = null
-  showPublisherDialog.value = true
+  selectedPublisher.value = null;
+  showPublisherDialog.value = true;
 }
 
 function openEditDialog(publisher: PublisherResponse) {
-  selectedPublisher.value = publisher
-  showPublisherDialog.value = true
+  selectedPublisher.value = publisher;
+  showPublisherDialog.value = true;
 }
 
-
 async function savePublisher(data: PublisherRequest) {
-  if (savingPublisher.value) return
+  if (savingPublisher.value) return;
 
   if (selectedPublisher.value) {
     pendingAction.value = {
       type: 'update',
       id: selectedPublisher.value.id,
       data,
-    }
+    };
 
-    showConfirmDialog.value = true
-    return
+    showConfirmDialog.value = true;
+    return;
   }
 
-  savingPublisher.value = true
+  savingPublisher.value = true;
 
   try {
-    await publisherService.create(data)
+    await publisherService.create(data);
 
-    showPublisherDialog.value = false
+    showPublisherDialog.value = false;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'positive',
-      message: 'Editora cadastrada com sucesso!',
-    })
+      message: t('publishers.created'),
+    }));
 
-    await loadPublishers()
-  } catch {
-    $q.notify({
+    await loadPublishers();
+  } catch (error: unknown) {
+    reportApiError(error);
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível cadastrar a editora.',
-    })
+      message: t(getApiErrorKey(error, 'publishers.createError')),
+    }));
   } finally {
-    savingPublisher.value = false
+    savingPublisher.value = false;
   }
 }
 
-
 function deletePublisher(id: string) {
-  if (savingPublisher.value) return
+  if (savingPublisher.value) return;
 
   pendingAction.value = {
     type: 'delete',
     id,
-  }
+  };
 
-  showConfirmDialog.value = true
+  showConfirmDialog.value = true;
 }
 
-
 type PendingAction =
-  | { type: 'update'; id: string; data: PublisherRequest }
-  | { type: 'delete'; id: string}
+  { type: 'update'; id: string; data: PublisherRequest } | { type: 'delete'; id: string };
 
-const showConfirmDialog = ref(false)
-const pendingAction = ref<PendingAction | null>(null)
+const showConfirmDialog = ref(false);
+const pendingAction = ref<PendingAction | null>(null);
 
 const confirmMessage = computed(() =>
-  pendingAction.value?.type === 'delete'
-  ? 'Vocẽ tem certeza que deseja excluir todos os dados?'
-  : 'Você tem certeza que deseja realizar essas alterações?',
-)
-
+  pendingAction.value?.type === 'delete' ? t('common.confirmDelete') : t('common.confirmUpdate'),
+);
 
 async function confirmPublisherAction() {
-  const action = pendingAction.value
+  const action = pendingAction.value;
 
-  if (!action || savingPublisher.value) return
+  if (!action || savingPublisher.value) return;
 
-  savingPublisher.value = true
+  savingPublisher.value = true;
 
   try {
     if (action.type === 'update') {
-      await publisherService.update(
-        action.id,
-        action.data,
-      )
+      await publisherService.update(action.id, action.data);
 
-      $q.notify({
+      notifyLocalized(() => ({
         type: 'positive',
-        message: 'Editora atualizada com sucesso!',
-      })
+        message: t('publishers.updated'),
+      }));
     } else {
-      await publisherService.delete(action.id)
+      await publisherService.delete(action.id);
 
-      $q.notify({
+      notifyLocalized(() => ({
         type: 'positive',
-        message: 'Editora excluída com sucesso!',
-      })
+        message: t('publishers.deleted'),
+      }));
 
-      if (
-        publishers.value.length === 1 &&
-        currentPage.value > 1
-      ) {
-        currentPage.value--
+      if (publishers.value.length === 1 && currentPage.value > 1) {
+        currentPage.value--;
       }
     }
 
-    showConfirmDialog.value = false
-    showPublisherDialog.value = false
-    pendingAction.value = null
-    selectedPublisher.value = null
+    showConfirmDialog.value = false;
+    showPublisherDialog.value = false;
+    pendingAction.value = null;
+    selectedPublisher.value = null;
 
-    await loadPublishers()
-  } catch {
-    $q.notify({
+    await loadPublishers();
+  } catch (error: unknown) {
+    reportApiError(error);
+    notifyLocalized(() => ({
       type: 'negative',
-      message: action.type === 'delete'
-        ? 'Não foi possível excluir a editora. Verifique se existem livros relacionados.'
-        : 'Não foi possível atualizar a editora.',
-    })
+      message:
+        action.type === 'delete'
+          ? t(getApiErrorKey(error, 'publishers.deleteError'))
+          : t(getApiErrorKey(error, 'publishers.updateError')),
+    }));
   } finally {
-    savingPublisher.value = false
+    savingPublisher.value = false;
   }
 }
 
-
 watch(search, () => {
-  currentPage.value = 1
-  void loadPublishers()
-})
+  currentPage.value = 1;
+  void loadPublishers();
+});
 
 onMounted(() => {
-  void loadPublishers()
-})
+  void loadPublishers();
+});
 </script>
 
 <template>
   <q-page class="publishers-page">
     <h1 class="publishers-title">
-      Editoras
+      {{ $t('menu.publishers') }}
     </h1>
 
     <q-card flat class="publishers-card">
@@ -215,7 +198,7 @@ onMounted(() => {
           dense
           clearable
           debounce="400"
-          placeholder="Buscar Editora por Nome"
+          :placeholder="$t('publishers.search')"
           class="publishers-search"
         >
           <template #append>
@@ -227,7 +210,7 @@ onMounted(() => {
           unelevated
           no-caps
           icon="add"
-          label="Cadastrar nova editora"
+          :label="$t('publishers.createNew')"
           class="create-button"
           @click="openCreateDialog"
         />
@@ -243,16 +226,19 @@ onMounted(() => {
         />
       </q-card-section>
 
-      <q-card-actions
-        align="between"
-        class="pagination-section"
-      >
+      <q-card-actions align="between" class="pagination-section">
         <span class="pagination-info">
-          Mostrando
-          {{ totalElements === 0 ? 0 : (currentPage - 1) * 10 + 1 }}
-          à
-          {{ Math.min(currentPage * 10, totalElements) }}
-          de {{ totalElements }} editoras
+          {{
+            $t(
+              'pagination.publishers',
+              {
+                start: $n(totalElements === 0 ? 0 : (currentPage - 1) * 10 + 1),
+                end: $n(Math.min(currentPage * 10, totalElements)),
+                total: $n(totalElements),
+              },
+              totalElements,
+            )
+          }}
         </span>
 
         <q-pagination
@@ -268,15 +254,13 @@ onMounted(() => {
       </q-card-actions>
     </q-card>
 
-
     <PublisherFormDialog
-        v-model="showPublisherDialog"
-        :publisher="selectedPublisher"
-        :loading="savingPublisher"
-        @save="savePublisher"
-        @delete="deletePublisher"
+      v-model="showPublisherDialog"
+      :publisher="selectedPublisher"
+      :loading="savingPublisher"
+      @save="savePublisher"
+      @delete="deletePublisher"
     />
-
 
     <ConfirmDialog
       v-model="showConfirmDialog"
@@ -285,11 +269,10 @@ onMounted(() => {
       @confirm="confirmPublisherAction"
       @update:model-value="
         (value) => {
-          if (!value) pendingAction = null
+          if (!value) pendingAction = null;
         }
       "
     />
-
   </q-page>
 </template>
 

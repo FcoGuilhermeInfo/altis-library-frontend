@@ -1,198 +1,173 @@
-
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useQuasar } from 'quasar'
+import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
+import { formatDate } from '@/utils/dateUtils';
+import { useI18n } from 'vue-i18n';
+import { computed, onMounted, ref } from 'vue';
+import { notifyLocalized } from '@/utils/localizedNotify';
 
-import { api } from '@/boot/axios'
-import { useAuthStore } from '@/stores/authStore'
+import { api } from '@/boot/axios';
+import { useAuthStore } from '@/stores/authStore';
 
-import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue';
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
+
+const { t } = useI18n({ useScope: 'global' });
 
 interface ProfileData {
-  id: string
-  name: string
-  email: string
-  cpf: string
-  birthDate: string
-  phone: string
-  address: string
+  id: string;
+  name: string;
+  email: string;
+  cpf: string;
+  birthDate: string;
+  phone: string;
+  address: string;
 }
 
 interface ProfileUpdate {
-  name: string
-  phone: string
-  address: string
+  name: string;
+  phone: string;
+  address: string;
 }
 
-const $q = useQuasar()
-const authStore = useAuthStore()
+const authStore = useAuthStore();
 
-const profile = ref<ProfileData | null>(null)
-const loading = ref(false)
-const saving = ref(false)
+const profile = ref<ProfileData | null>(null);
+const loading = ref(false);
+const saving = ref(false);
 
-const showEditDialog = ref(false)
-const showConfirmDialog = ref(false)
+const showEditDialog = ref(false);
+const showConfirmDialog = ref(false);
 
-const pendingUpdate = ref<ProfileUpdate | null>(null)
+const pendingUpdate = ref<ProfileUpdate | null>(null);
 
-const isAdmin = computed(() => authStore.isAdmin)
+const isAdmin = computed(() => authStore.isAdmin);
 
-const userRole = computed(() =>
-  isAdmin.value ? 'admin' : 'locatário',
-)
+const userRole = computed(() => (isAdmin.value ? t('profile.admin') : t('loans.borrower')));
 
 async function loadProfile() {
-  const userId = authStore.user?.id
+  const userId = authStore.user?.id;
 
   if (!userId) {
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Usuário não autenticado.',
-    })
-    return
+      message: t('profile.unauthenticated'),
+    }));
+    return;
   }
 
-  loading.value = true
+  loading.value = true;
 
   try {
-    const response = await api.get<ProfileData>(
-      `/users/${userId}`,
-    )
+    const response = await api.get<ProfileData>(`/users/${userId}`);
 
-    profile.value = response.data
-  } catch {
-    profile.value = null
+    profile.value = response.data;
+  } catch (error: unknown) {
+    reportApiError(error);
+    profile.value = null;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível carregar o perfil.',
-    })
+      message: t(getApiErrorKey(error, 'profile.loadError')),
+    }));
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function openEditDialog() {
-  if (!profile.value || isAdmin.value) return
+  if (!profile.value || isAdmin.value) return;
 
-  showEditDialog.value = true
+  showEditDialog.value = true;
 }
 
 function requestSave(data: ProfileUpdate) {
-  if (saving.value || showConfirmDialog.value) return
+  if (saving.value || showConfirmDialog.value) return;
 
-  pendingUpdate.value = data
-  showConfirmDialog.value = true
+  pendingUpdate.value = data;
+  showConfirmDialog.value = true;
 }
 
 function onConfirmDialogChange(value: boolean) {
   if (!value && !saving.value) {
-    pendingUpdate.value = null
+    pendingUpdate.value = null;
   }
 }
 
 async function confirmSave() {
-  const data = pendingUpdate.value
-  const userId = authStore.user?.id
+  const data = pendingUpdate.value;
+  const userId = authStore.user?.id;
 
-  if (!data || !userId || saving.value || isAdmin.value) return
+  if (!data || !userId || saving.value || isAdmin.value) return;
 
-  saving.value = true
+  saving.value = true;
 
   try {
-    const response = await api.patch<ProfileData>(
-      `/users/${userId}`,
-      data,
-    )
+    const response = await api.patch<ProfileData>(`/users/${userId}`, data);
 
-    profile.value = response.data
-    pendingUpdate.value = null
-    showConfirmDialog.value = false
-    showEditDialog.value = false
+    profile.value = response.data;
+    pendingUpdate.value = null;
+    showConfirmDialog.value = false;
+    showEditDialog.value = false;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'positive',
-      message: 'Perfil atualizado com sucesso!',
-    })
-  } catch {
-    $q.notify({
+      message: t('profile.updated'),
+    }));
+  } catch (error: unknown) {
+    reportApiError(error);
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível atualizar o perfil.',
-    })
+      message: t(getApiErrorKey(error, 'profile.updateError')),
+    }));
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
-
-function formatDate(value: string | null | undefined): string {
-  if (!value) return '-'
-
-  const [year, month, day] = value.slice(0, 10).split('-')
-
-  if (!year || !month || !day) return '-'
-
-  return `${day}/${month}/${year}`
 }
 
 function formatCpf(value: string | null | undefined): string {
-  if (!value) return '-'
+  if (!value) return '-';
 
-  const digits = value.replace(/\D/g, '')
+  const digits = value.replace(/\D/g, '');
 
-  if (digits.length !== 11) return value
+  if (digits.length !== 11) return value;
 
-  return digits.replace(
-    /(\d{3})(\d{3})(\d{3})(\d{2})/,
-    '$1.$2.$3-$4',
-  )
+  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
 }
 
 function formatPhone(value: string | null | undefined): string {
-  if (!value) return '-'
+  if (!value) return '-';
 
-  const digits = value.replace(/\D/g, '')
+  const digits = value.replace(/\D/g, '');
 
   if (digits.length === 11) {
-    return digits.replace(
-      /(\d{2})(\d{5})(\d{4})/,
-      '($1) $2-$3',
-    )
+    return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
   }
 
   if (digits.length === 10) {
-    return digits.replace(
-      /(\d{2})(\d{4})(\d{4})/,
-      '($1) $2-$3',
-    )
+    return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
   }
 
-  return value
+  return value;
 }
 
 onMounted(() => {
-  void loadProfile()
-})
+  void loadProfile();
+});
 </script>
 
 <template>
   <q-page class="profile-page">
     <h1 class="profile-title">
-      PERFIL
+      {{ $t('menuprofile.profile') }}
     </h1>
 
     <div v-if="loading" class="feedback-container">
-      <q-spinner size="48px" color="primary" />
+      <q-spinner :aria-label="$t('common.loading')" size="48px" color="primary" />
     </div>
 
     <q-card v-else-if="profile" flat class="profile-card">
       <q-card-section class="profile-header">
-       <q-icon
-            name="account_circle"
-            size="56px"
-            color="dark"
-        />
+        <q-icon name="account_circle" size="56px" color="dark" />
 
         <div class="profile-identity">
           <strong>{{ profile.name }}</strong>
@@ -205,7 +180,7 @@ onMounted(() => {
           v-if="!isAdmin"
           unelevated
           no-caps
-          label="Editar perfil"
+          :label="$t('profile.edit')"
           class="edit-button"
           @click="openEditDialog"
         />
@@ -213,12 +188,12 @@ onMounted(() => {
 
       <q-card-section class="profile-information">
         <div class="profile-field">
-          <strong>Nome completo:</strong>
+          <strong>{{ $t('common.fullName') }}:</strong>
           <span>{{ profile.name }}</span>
         </div>
 
         <div class="profile-field">
-          <strong>E-mail:</strong>
+          <strong>{{ $t('register.email') }}:</strong>
           <span class="profile-email">
             {{ profile.email }}
           </span>
@@ -227,44 +202,38 @@ onMounted(() => {
         <template v-if="!isAdmin">
           <div class="profile-details-grid">
             <div class="profile-field">
-              <strong>CPF:</strong>
+              <strong>{{ $t('register.cpf') }}:</strong>
               <span>{{ formatCpf(profile.cpf) }}</span>
             </div>
 
             <div class="profile-field">
-              <strong>Data de Nascimento:</strong>
+              <strong>{{ $t('register.birthDate') }}:</strong>
               <span>{{ formatDate(profile.birthDate) }}</span>
             </div>
 
             <div class="profile-field">
-              <strong>Telefone:</strong>
+              <strong>{{ $t('register.phone') }}:</strong>
               <span>{{ formatPhone(profile.phone) }}</span>
             </div>
           </div>
 
           <div class="profile-field">
-            <strong>Endereço:</strong>
+            <strong>{{ $t('register.address') }}:</strong>
             <span>{{ profile.address || '-' }}</span>
           </div>
         </template>
 
         <div class="profile-field">
-          <strong>Senha:</strong>
+          <strong>{{ $t('register.password') }}:</strong>
           <span>********</span>
         </div>
       </q-card-section>
     </q-card>
 
     <div v-else class="feedback-container">
-      <p>Não foi possível apresentar os dados do perfil.</p>
+      <p>{{ $t('profile.unavailable') }}</p>
 
-      <q-btn
-        unelevated
-        no-caps
-        color="primary"
-        label="Tentar novamente"
-        @click="loadProfile"
-      />
+      <q-btn unelevated no-caps color="primary" :label="$t('common.retry')" @click="loadProfile" />
     </div>
 
     <ProfileEditDialog
@@ -277,7 +246,7 @@ onMounted(() => {
 
     <ConfirmDialog
       v-model="showConfirmDialog"
-      message="Você tem certeza que deseja alterar seus dados cadastrais?"
+      :message="$t('profile.confirmUpdate')"
       :loading="saving"
       @confirm="confirmSave"
       @update:model-value="onConfirmDialogChange"

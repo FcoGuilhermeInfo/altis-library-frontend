@@ -1,58 +1,50 @@
-
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/authStore'
-import {
-  saveRememberedEmail,
-  getRememberedEmail,
-  clearRememberedEmail,
-} from '@/utils/rememberMe'
-import { requiredRule, emailRule } from '@/utils/validationRules'
+import { useLocalizedValidation } from '@/utils/localizedValidation';
+import { reportApiError } from '@/utils/apiErrors';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore';
+import { saveRememberedEmail, getRememberedEmail, clearRememberedEmail } from '@/utils/rememberMe';
+import { requiredRule, emailRule } from '@/utils/validationRules';
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
-const rememberedEmail = getRememberedEmail()
+const rememberedEmail = getRememberedEmail();
 
-const email = ref<string>(rememberedEmail)
-const password = ref('')
-const rememberMe = ref(Boolean(rememberedEmail))
-const showPassword = ref(false)
-
+const email = ref<string>(rememberedEmail);
+const password = ref('');
+const rememberMe = ref(Boolean(rememberedEmail));
+const showPassword = ref(false);
 
 async function onSubmit() {
   try {
     await authStore.login({
       email: email.value.trim(),
       password: password.value,
-    })
+    });
 
     if (rememberMe.value) {
-      saveRememberedEmail(email.value.trim())
+      saveRememberedEmail(email.value.trim());
     } else {
-      clearRememberedEmail()
+      clearRememberedEmail();
     }
 
-    await router.push('/dashboard')
+    await router.push('/dashboard');
   } catch (error: unknown) {
-    console.error('Falha ao realizar login:', error)
+    reportApiError(error);
   }
-
- 
-
-  
 }
 
 function goToRegister() {
-  void router.push('/register')
+  void router.push('/register');
 }
 
 function goToForgotPassword() {
-  void router.push('/forgot-password')
+  void router.push('/forgot-password');
 }
+const localizedForm = useLocalizedValidation();
 </script>
-
 
 <template>
   <div class="login-form-container">
@@ -60,16 +52,11 @@ function goToForgotPassword() {
       {{ $t('login.login') }}
     </h1>
 
-
-    <q-banner
-      v-if="authStore.error"
-      class="bg-red-1 text-negative q-mb-md"
-      rounded
-    >
+    <q-banner v-if="authStore.error" class="bg-red-1 text-negative q-mb-md" rounded>
       {{ authStore.error }}
     </q-banner>
 
-    <q-form class="login-form" @submit.prevent="onSubmit">
+    <q-form ref="localizedForm" class="login-form" @submit.prevent="onSubmit">
       <q-input
         v-model="email"
         type="email"
@@ -96,7 +83,7 @@ function goToForgotPassword() {
         bg-color="grey-4"
         class="login-input"
         autocomplete="current-password"
-         :rules="[requiredRule]"
+        :rules="[requiredRule]"
         lazy-rules="ondemand"
       >
         <template #prepend>
@@ -105,6 +92,11 @@ function goToForgotPassword() {
 
         <template #append>
           <q-icon
+            :aria-label="showPassword ? $t('common.hidePassword') : $t('common.showPassword')"
+            role="button"
+            tabindex="0"
+            @keydown.enter.prevent="showPassword = !showPassword"
+            @keydown.space.prevent="showPassword = !showPassword"
             :name="showPassword ? 'visibility_off' : 'visibility'"
             class="cursor-pointer"
             @click="showPassword = !showPassword"
@@ -114,7 +106,15 @@ function goToForgotPassword() {
 
       <q-checkbox v-model="rememberMe" :label="$t('login.rememberMe')" class="remember-checkbox" />
 
-      <q-btn type="submit" :label="$t('login.enter')" :loading="authStore.loading" :disable="authStore.loading" class="login-button" no-caps unelevated />
+      <q-btn
+        type="submit"
+        :label="$t('login.enter')"
+        :loading="authStore.loading"
+        :disable="authStore.loading"
+        class="login-button"
+        no-caps
+        unelevated
+      />
     </q-form>
 
     <div class="login-divider">
@@ -125,12 +125,26 @@ function goToForgotPassword() {
       <q-separator />
     </div>
 
-    <q-btn flat no-caps :label="$t('login.forgotPassword')" class="forgot-password" type="button" @click="goToForgotPassword" />
+    <q-btn
+      flat
+      no-caps
+      :label="$t('login.forgotPassword')"
+      class="forgot-password"
+      type="button"
+      @click="goToForgotPassword"
+    />
 
     <div class="register-text">
       <span>{{ $t('login.noAccount') }}</span>
 
-      <q-btn flat no-caps :label="$t('login.register')" class="register-button" type="button" @click="goToRegister" />
+      <q-btn
+        flat
+        no-caps
+        :label="$t('login.register')"
+        class="register-button"
+        type="button"
+        @click="goToRegister"
+      />
     </div>
   </div>
 </template>

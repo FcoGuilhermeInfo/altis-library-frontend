@@ -1,69 +1,75 @@
-
 <script setup lang="ts">
-import type { QTableColumn } from 'quasar'
-import type { BookResponse } from '@/types/book'
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import type { QTableColumn } from 'quasar';
+import type { BookResponse } from '@/types/book';
+
+const { t, n } = useI18n({ useScope: 'global' });
 
 defineProps<{
-  books: BookResponse[]
-  loading: boolean
-  page: number
-  totalElements: number
-}>()
+  books: BookResponse[];
+  loading: boolean;
+  page: number;
+  totalElements: number;
+}>();
 
 const emit = defineEmits<{
-  edit: [book: BookResponse]
-}>()
+  edit: [book: BookResponse];
+}>();
 
-const columns: QTableColumn<BookResponse>[] = [
+const columns = computed<QTableColumn<BookResponse>[]>(() => [
   {
     name: 'title',
-    label: 'Título',
+    label: t('books.title'),
     field: 'title',
     align: 'left',
   },
   {
     name: 'author',
-    label: 'Autor',
+    label: t('books.author'),
     field: 'author',
     align: 'left',
   },
   {
     name: 'releaseYear',
-    label: 'Ano',
+    label: t('books.year'),
     field: 'releaseYear',
     align: 'left',
   },
   {
     name: 'publisherName',
-    label: 'Editora',
+    label: t('books.publisher'),
     field: 'publisherName',
     align: 'left',
   },
   {
     name: 'totalQuantity',
-    label: 'Qtd. Total',
+    label: t('books.total'),
     field: 'totalQuantity',
+    format: (value: number) => n(value),
     align: 'center',
   },
   {
     name: 'availableQuantity',
-    label: 'Qtd. Disponível',
+    label: t('books.available'),
     field: 'availableQuantity',
+    format: (value: number) => n(value),
     align: 'center',
   },
   {
     name: 'borrowedQuantity',
-    label: 'Qtd. Emprestada',
+    label: t('books.borrowed'),
     field: 'borrowedQuantity',
+    format: (value: number) => n(value),
     align: 'center',
   },
   {
     name: 'actions',
-    label: 'Ações',
+    label: t('common.actions'),
     field: 'id',
     align: 'center',
   },
-]
+]);
 </script>
 
 <template>
@@ -95,17 +101,17 @@ const columns: QTableColumn<BookResponse>[] = [
           dense
           icon="edit_square"
           color="primary"
-          aria-label="Editar livro"
+          :aria-label="$t('books.edit')"
           @click="emit('edit', props.row)"
         >
-          <q-tooltip>Editar livro</q-tooltip>
+          <q-tooltip>{{ $t('books.edit') }}</q-tooltip>
         </q-btn>
       </q-td>
     </template>
 
     <template #no-data>
       <div class="full-width text-center q-pa-lg">
-        Nenhum livro encontrado.
+        {{ $t('books.empty') }}
       </div>
     </template>
   </q-table>

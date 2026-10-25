@@ -1,292 +1,285 @@
-
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useQuasar } from 'quasar'
+import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
+import { useI18n } from 'vue-i18n';
+import { computed, onMounted, ref, watch } from 'vue';
+import { notifyLocalized } from '@/utils/localizedNotify';
 
-import LoansTable from '@/components/loans/LoansTable.vue'
-import LoanFormDialog from '@/components/loans/LoanFormDialog.vue'
-import LoanDetailsDialog from '@/components/loans/LoanDetailsDialog.vue'
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import LoansTable from '@/components/loans/LoansTable.vue';
+import LoanFormDialog from '@/components/loans/LoanFormDialog.vue';
+import LoanDetailsDialog from '@/components/loans/LoanDetailsDialog.vue';
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 
-import { loanService } from '@/services/loanService'
+import { loanService } from '@/services/loanService';
 
-import type { LoanRequest, LoanResponse } from '@/types/loan'
+import type { LoanRequest, LoanResponse } from '@/types/loan';
 
-const $q = useQuasar()
+const { t } = useI18n({ useScope: 'global' });
 
-const pageSize = 10
+const pageSize = 10;
 
 // Empréstimos ativos
-const loans = ref<LoanResponse[]>([])
-const search = ref<string | null>('')
-const currentPage = ref(1)
-const totalElements = ref(0)
-const loading = ref(false)
+const loans = ref<LoanResponse[]>([]);
+const search = ref<string | null>('');
+const currentPage = ref(1);
+const totalElements = ref(0);
+const loading = ref(false);
 
 // Últimos empréstimos finalizados
-const recentHistory = ref<LoanResponse[]>([])
-const loadingRecentHistory = ref(false)
+const recentHistory = ref<LoanResponse[]>([]);
+const loadingRecentHistory = ref(false);
 
 // Histórico completo
-const showHistoryDialog = ref(false)
-const history = ref<LoanResponse[]>([])
-const historyPage = ref(1)
-const historyTotalElements = ref(0)
-const loadingHistory = ref(false)
+const showHistoryDialog = ref(false);
+const history = ref<LoanResponse[]>([]);
+const historyPage = ref(1);
+const historyTotalElements = ref(0);
+const loadingHistory = ref(false);
 
 // Registro de empréstimo
-const showCreateDialog = ref(false)
-const savingLoan = ref(false)
+const showCreateDialog = ref(false);
+const savingLoan = ref(false);
 
 // Detalhes e devolução
-const showDetailsDialog = ref(false)
-const selectedLoan = ref<LoanResponse | null>(null)
-const loadingDetails = ref(false)
+const showDetailsDialog = ref(false);
+const selectedLoan = ref<LoanResponse | null>(null);
+const loadingDetails = ref(false);
 
 // Confirmação de devolução
-const showConfirmDialog = ref(false)
-const returningLoan = ref(false)
-const pendingReturnId = ref<string | null>(null)
+const showConfirmDialog = ref(false);
+const returningLoan = ref(false);
+const pendingReturnId = ref<string | null>(null);
 
 // Paginação
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(totalElements.value / pageSize)),
-)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalElements.value / pageSize)));
 
 const historyTotalPages = computed(() =>
   Math.max(1, Math.ceil(historyTotalElements.value / pageSize)),
-)
+);
 
-let loansRequestId = 0
-let historyRequestId = 0
+let loansRequestId = 0;
+let historyRequestId = 0;
 
 // Buscar empréstimos ativos
 async function loadLoans() {
-  const currentRequest = ++loansRequestId
-  loading.value = true
+  const currentRequest = ++loansRequestId;
+  loading.value = true;
 
   try {
-    const response = await loanService.findAll(
-      search.value ?? '',
-      currentPage.value,
-      pageSize,
-    )
+    const response = await loanService.findAll(search.value ?? '', currentPage.value, pageSize);
 
-    if (currentRequest !== loansRequestId) return
+    if (currentRequest !== loansRequestId) return;
 
-    loans.value = response.content
-    totalElements.value = response.totalElements
-  } catch {
-    if (currentRequest !== loansRequestId) return
+    loans.value = response.content;
+    totalElements.value = response.totalElements;
+  } catch (error: unknown) {
+    reportApiError(error);
+    if (currentRequest !== loansRequestId) return;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível carregar os empréstimos.',
-    })
+      message: t(getApiErrorKey(error, 'loans.loadError')),
+    }));
   } finally {
     if (currentRequest === loansRequestId) {
-      loading.value = false
+      loading.value = false;
     }
   }
 }
 
 // Buscar últimos empréstimos devolvidos
 async function loadRecentHistory() {
-  loadingRecentHistory.value = true
+  loadingRecentHistory.value = true;
 
   try {
-    const response = await loanService.findHistory('', 1, 5)
+    const response = await loanService.findHistory('', 1, 5);
 
-    recentHistory.value = response.content
-  } catch {
-    $q.notify({
+    recentHistory.value = response.content;
+  } catch (error: unknown) {
+    reportApiError(error);
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível carregar os últimos empréstimos.',
-    })
+      message: t(getApiErrorKey(error, 'loans.recentError')),
+    }));
   } finally {
-    loadingRecentHistory.value = false
+    loadingRecentHistory.value = false;
   }
 }
 
 // Buscar histórico completo
 async function loadHistory() {
-  const currentRequest = ++historyRequestId
-  loadingHistory.value = true
+  const currentRequest = ++historyRequestId;
+  loadingHistory.value = true;
 
   try {
-    const response = await loanService.findHistory(
-      '',
-      historyPage.value,
-      pageSize,
-    )
+    const response = await loanService.findHistory('', historyPage.value, pageSize);
 
-    if (currentRequest !== historyRequestId) return
+    if (currentRequest !== historyRequestId) return;
 
-    history.value = response.content
-    historyTotalElements.value = response.totalElements
-  } catch {
-    if (currentRequest !== historyRequestId) return
+    history.value = response.content;
+    historyTotalElements.value = response.totalElements;
+  } catch (error: unknown) {
+    reportApiError(error);
+    if (currentRequest !== historyRequestId) return;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível carregar o histórico.',
-    })
+      message: t(getApiErrorKey(error, 'loans.historyError')),
+    }));
   } finally {
     if (currentRequest === historyRequestId) {
-      loadingHistory.value = false
+      loadingHistory.value = false;
     }
   }
 }
 
 // Paginação de empréstimos ativos
 function changePage(page: number) {
-  if (page === currentPage.value) return
+  if (page === currentPage.value) return;
 
-  currentPage.value = page
-  void loadLoans()
+  currentPage.value = page;
+  void loadLoans();
 }
 
 // Paginação do histórico
 function changeHistoryPage(page: number) {
-  if (page === historyPage.value) return
+  if (page === historyPage.value) return;
 
-  historyPage.value = page
-  void loadHistory()
+  historyPage.value = page;
+  void loadHistory();
 }
 
 // Abrir histórico completo
 function openHistory() {
-  historyPage.value = 1
-  showHistoryDialog.value = true
+  historyPage.value = 1;
+  showHistoryDialog.value = true;
 
-  void loadHistory()
+  void loadHistory();
 }
 
 // Abrir registro de empréstimo
 function openCreateDialog() {
-  showCreateDialog.value = true
+  showCreateDialog.value = true;
 }
 
 // Registrar empréstimo
 async function saveLoan(data: LoanRequest) {
-  if (savingLoan.value) return
+  if (savingLoan.value) return;
 
-  savingLoan.value = true
+  savingLoan.value = true;
 
   try {
-    await loanService.create(data)
+    await loanService.create(data);
 
-    showCreateDialog.value = false
+    showCreateDialog.value = false;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'positive',
-      message: 'Empréstimo registrado com sucesso!',
-    })
+      message: t('loans.created'),
+    }));
 
-    await loadLoans()
-  } catch {
-    $q.notify({
+    await loadLoans();
+  } catch (error: unknown) {
+    reportApiError(error);
+    notifyLocalized(() => ({
       type: 'negative',
-      message:
-        'Não foi possível registrar o empréstimo. Verifique a disponibilidade do livro e a situação do locatário.',
-    })
+      message: t(getApiErrorKey(error, 'loans.createError')),
+    }));
   } finally {
-    savingLoan.value = false
+    savingLoan.value = false;
   }
 }
 
 // Consultar detalhes do empréstimo
 async function viewDetails(id: string) {
-  if (loadingDetails.value) return
+  if (loadingDetails.value) return;
 
-  loadingDetails.value = true
+  loadingDetails.value = true;
 
   try {
-    selectedLoan.value = await loanService.findById(id)
-    showDetailsDialog.value = true
-  } catch {
-    $q.notify({
+    selectedLoan.value = await loanService.findById(id);
+    showDetailsDialog.value = true;
+  } catch (error: unknown) {
+    reportApiError(error);
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível consultar o empréstimo.',
-    })
+      message: t(getApiErrorKey(error, 'loans.detailsError')),
+    }));
   } finally {
-    loadingDetails.value = false
+    loadingDetails.value = false;
   }
 }
 
 // Solicitar confirmação de devolução
 function requestReturn(id: string) {
-  if (returningLoan.value || showConfirmDialog.value) return
+  if (returningLoan.value || showConfirmDialog.value) return;
 
-  pendingReturnId.value = id
-  showConfirmDialog.value = true
+  pendingReturnId.value = id;
+  showConfirmDialog.value = true;
 }
 
 // Cancelar confirmação
 function onConfirmDialogChange(value: boolean) {
   if (!value && !returningLoan.value) {
-    pendingReturnId.value = null
+    pendingReturnId.value = null;
   }
 }
 
 // Confirmar devolução
 async function confirmReturn() {
-  const id = pendingReturnId.value
+  const id = pendingReturnId.value;
 
-  if (!id || returningLoan.value) return
+  if (!id || returningLoan.value) return;
 
-  returningLoan.value = true
+  returningLoan.value = true;
 
   try {
-    await loanService.returnBook(id)
+    await loanService.returnBook(id);
 
-    showConfirmDialog.value = false
-    showDetailsDialog.value = false
+    showConfirmDialog.value = false;
+    showDetailsDialog.value = false;
 
-    pendingReturnId.value = null
-    selectedLoan.value = null
+    pendingReturnId.value = null;
+    selectedLoan.value = null;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'positive',
-      message: 'Devolução registrada com sucesso!',
-    })
+      message: t('loans.returned'),
+    }));
 
     // Evitar página vazia quando o último empréstimo é devolvido
     if (loans.value.length === 1 && currentPage.value > 1) {
-      currentPage.value--
+      currentPage.value--;
     }
 
     // Atualizar empréstimos ativos e histórico recente
-    await Promise.all([
-      loadLoans(),
-      loadRecentHistory(),
-    ])
+    await Promise.all([loadLoans(), loadRecentHistory()]);
 
     // Atualizar também o histórico completo, se estiver aberto
     if (showHistoryDialog.value) {
-      await loadHistory()
+      await loadHistory();
     }
-  } catch {
-    $q.notify({
+  } catch (error: unknown) {
+    reportApiError(error);
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível registrar a devolução.',
-    })
+      message: t(getApiErrorKey(error, 'loans.returnError')),
+    }));
   } finally {
-    returningLoan.value = false
+    returningLoan.value = false;
   }
 }
 
 // Pesquisa por locatário
 watch(search, () => {
-  currentPage.value = 1
-  void loadLoans()
-})
+  currentPage.value = 1;
+  void loadLoans();
+});
 
 // Carregar dados ao abrir a página
 onMounted(() => {
-  void loadLoans()
-  void loadRecentHistory()
-})
+  void loadLoans();
+  void loadRecentHistory();
+});
 </script>
 
 <template>
@@ -301,7 +294,7 @@ onMounted(() => {
           dense
           clearable
           debounce="400"
-          placeholder="Buscar Empréstimo por Locatário"
+          :placeholder="$t('loans.search')"
           class="loans-search"
         >
           <template #append>
@@ -313,7 +306,7 @@ onMounted(() => {
           unelevated
           no-caps
           icon="add"
-          label="Registrar novo empréstimo"
+          :label="$t('loans.createNew')"
           class="create-button"
           @click="openCreateDialog"
         />
@@ -328,16 +321,19 @@ onMounted(() => {
         />
       </q-card-section>
 
-      <q-card-actions
-        align="between"
-        class="pagination-section"
-      >
+      <q-card-actions align="between" class="pagination-section">
         <span class="pagination-info">
-          Mostrando
-          {{ totalElements === 0 ? 0 : (currentPage - 1) * pageSize + 1 }}
-          à
-          {{ Math.min(currentPage * pageSize, totalElements) }}
-          de {{ totalElements }} empréstimos
+          {{
+            $t(
+              'pagination.loans',
+              {
+                start: $n(totalElements === 0 ? 0 : (currentPage - 1) * pageSize + 1),
+                end: $n(Math.min(currentPage * pageSize, totalElements)),
+                total: $n(totalElements),
+              },
+              totalElements,
+            )
+          }}
         </span>
 
         <q-pagination
@@ -357,48 +353,28 @@ onMounted(() => {
     <q-card flat class="history-card">
       <q-card-section class="history-header">
         <div class="history-title">
-          Últimos Empréstimos Realizados
+          {{ $t('loans.recentHistory') }}
         </div>
 
-        <q-btn
-          flat
-          no-caps
-          label="Ver histórico completo"
-          color="primary"
-          @click="openHistory"
-        />
+        <q-btn flat no-caps :label="$t('loans.fullHistory')" color="primary" @click="openHistory" />
       </q-card-section>
 
       <q-card-section class="history-table-section">
-        <LoansTable
-          :loans="recentHistory"
-          :loading="loadingRecentHistory"
-        />
+        <LoansTable :loans="recentHistory" :loading="loadingRecentHistory" />
       </q-card-section>
     </q-card>
 
     <!-- Histórico completo -->
-    <q-dialog
-      v-model="showHistoryDialog"
-      maximized
-    >
+    <q-dialog v-model="showHistoryDialog" maximized>
       <q-card class="history-dialog">
         <q-card-section class="history-dialog-header">
-          <h2>Últimos Empréstimos Realizados</h2>
+          <h2>{{ $t('loans.recentHistory') }}</h2>
 
-          <q-btn
-            v-close-popup
-            flat
-            round
-            icon="close"
-          />
+          <q-btn v-close-popup flat round icon="close" :aria-label="$t('common.close')" />
         </q-card-section>
 
         <q-card-section>
-          <LoansTable
-            :loans="history"
-            :loading="loadingHistory"
-          />
+          <LoansTable :loans="history" :loading="loadingHistory" />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -415,11 +391,7 @@ onMounted(() => {
     </q-dialog>
 
     <!-- Registrar empréstimo -->
-    <LoanFormDialog
-      v-model="showCreateDialog"
-      :loading="savingLoan"
-      @save="saveLoan"
-    />
+    <LoanFormDialog v-model="showCreateDialog" :loading="savingLoan" @save="saveLoan" />
 
     <!-- Detalhes e devolução -->
     <LoanDetailsDialog
@@ -432,7 +404,7 @@ onMounted(() => {
     <!-- Confirmação da devolução -->
     <ConfirmDialog
       v-model="showConfirmDialog"
-      message="Confirma a devolução do livro por parte do locatário?"
+      :message="$t('loans.returnPrompt')"
       :loading="returningLoan"
       @confirm="confirmReturn"
       @update:model-value="onConfirmDialogChange"

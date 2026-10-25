@@ -1,133 +1,140 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
 import LanguageDialog from './LanguageDialog.vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore.js';
-import { ref, watch } from 'vue'
-import { userService } from '@/services/userService'
+import { computed, ref, watch } from 'vue';
+import { userService } from '@/services/userService';
 
+const { t } = useI18n({ useScope: 'global' });
 
+const authStore = useAuthStore();
 
-const authStore = useAuthStore()
-
-const userName = ref('Usuário')
+const userName = ref('');
+const loadingName = ref(false);
+const displayName = computed(() =>
+  loadingName.value ? t('common.loading') : userName.value || t('common.user'),
+);
 
 watch(
   () => authStore.user?.id,
   async (userId) => {
     if (!userId) {
-      userName.value = 'Usuário'
-      return
+      userName.value = '';
+      loadingName.value = false;
+      return;
     }
 
-    userName.value = 'Carregando...'
+    loadingName.value = true;
 
     try {
-      const user = await userService.findById(userId)
+      const user = await userService.findById(userId);
 
-      if (authStore.user?.id !== userId) return
+      if (authStore.user?.id !== userId) return;
 
-      userName.value = user.name
+      userName.value = user.name;
+      loadingName.value = false;
     } catch {
-      if (authStore.user?.id !== userId) return
+      if (authStore.user?.id !== userId) return;
 
-      userName.value = authStore.user?.email ?? 'Usuário'
+      userName.value = authStore.user?.email ?? '';
+      loadingName.value = false;
     }
   },
   { immediate: true },
-)
+);
 
-const showLanguageDialog = ref(false)
+const showLanguageDialog = ref(false);
 
+function handleMenuItem(item: (typeof menuItems)[number]) {
+  if (item.action === 'language') {
+    showLanguageDialog.value = true;
+  }
 
-function handleMenuItem(item: typeof menuItems[number]) {
-    if (item.action === 'language') {
-        showLanguageDialog.value = true
-    }
-
-    if (item.action === 'logout') {
-        return handleLogout()
-    }
+  if (item.action === 'logout') {
+    return handleLogout();
+  }
 }
 
 const menuItems = [
-    {
-        label: 'menuprofile.profile',
-        to: '/profile',
-        icon: 'account_box',
-    },
-    {
-        label: 'menuprofile.change_language',
-        icon: 'language',
-        action: 'language'
-    },
-    {
-        label: 'menuprofile.logout',
-        action: 'logout',
-        icon: 'logout',
-    },
+  {
+    label: 'menuprofile.profile',
+    to: '/profile',
+    icon: 'account_box',
+  },
+  {
+    label: 'menuprofile.change_language',
+    icon: 'language',
+    action: 'language',
+  },
+  {
+    label: 'menuprofile.logout',
+    action: 'logout',
+    icon: 'logout',
+  },
+];
 
-]
+const router = useRouter();
 
-const router = useRouter()
-
-async function handleLogout(){
-    authStore.logout()
-    await router.replace('/login')
+async function handleLogout() {
+  authStore.logout();
+  await router.replace('/login');
 }
 </script>
 
 <template>
-    <q-btn-dropdown
-        flat
-        dense
-        icon="account_circle"
-        color="white"
-        size="30px"
-        class="profile-dropdown"
-        content-class="bg-transparent no-shadow"
-        menu-anchor="bottom right"
-        menu-self="top right"
-        :offset="[0, 0]"
-    >
-        <q-list class="profile-menu">
-            <q-item class="profile-header">
-                <q-item-section class="profile-user">
-                    <q-avatar size="45px">
-                        <q-icon name="account_circle" size="50px" />
-                    </q-avatar>
+  <q-btn-dropdown
+    :aria-label="$t('menuprofile.profile')"
+    flat
+    dense
+    icon="account_circle"
+    color="white"
+    size="30px"
+    class="profile-dropdown"
+    content-class="bg-transparent no-shadow"
+    menu-anchor="bottom right"
+    menu-self="top right"
+    :offset="[0, 0]"
+  >
+    <q-list class="profile-menu">
+      <q-item class="profile-header">
+        <q-item-section class="profile-user">
+          <q-avatar size="45px">
+            <q-icon name="account_circle" size="50px" />
+          </q-avatar>
 
-                    <q-item-label class="profile-name">
-                        {{ userName }}
-                    </q-item-label>
-                </q-item-section>
-            </q-item>
+          <q-item-label class="profile-name">
+            {{ displayName }}
+          </q-item-label>
+        </q-item-section>
+      </q-item>
 
-            <q-separator />
+      <q-separator />
 
-            <q-item
-                v-for="(item, index) in menuItems"
-                :key="item.label"
-                clickable
-                :to="item.to"
-                class="menu-options"
-                @click="handleMenuItem(item)"
-                :class="{ 'logout-item': index === 2 }"
-                active-class="menu-item-active"
-            >
-                <q-item-section avatar>
-                    <q-icon :name="item.icon" size="30px" />
-                </q-item-section>
+      <q-item
+        v-for="(item, index) in menuItems"
+        :key="item.label"
+        clickable
+        :to="item.to"
+        class="menu-options"
+        @click="handleMenuItem(item)"
+        :class="{ 'logout-item': index === 2 }"
+        active-class="menu-item-active"
+      >
+        <q-item-section avatar>
+          <q-icon :name="item.icon" size="30px" />
+        </q-item-section>
 
-                <q-item-section>
-                    <q-item-label class="menu-label">
-                        {{ $t(item.label) }}
-                    </q-item-label>
-                </q-item-section>
-            </q-item>
-        </q-list>
-    </q-btn-dropdown>
+        <q-item-section>
+          <q-item-label class="menu-label">
+            {{ $t(item.label) }}
+          </q-item-label>
+        </q-item-section>
+      </q-item>
+    </q-list>
+  </q-btn-dropdown>
 
-    <LanguageDialog v-model="showLanguageDialog"/>
+  <LanguageDialog v-model="showLanguageDialog" />
 </template>
 
 <style scoped>

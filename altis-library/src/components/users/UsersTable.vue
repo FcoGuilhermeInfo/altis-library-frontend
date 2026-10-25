@@ -1,84 +1,78 @@
-
 <script setup lang="ts">
-import type { QTableColumn } from 'quasar'
-import type { UserResponse } from '@/types/user'
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import type { QTableColumn } from 'quasar';
+import type { UserResponse } from '@/types/user';
+
+const { t } = useI18n({ useScope: 'global' });
 
 defineProps<{
-  users: UserResponse[]
-  loading: boolean
-  page: number
-  totalElements: number
-  updatingId: string | null
-}>()
+  users: UserResponse[];
+  loading: boolean;
+  page: number;
+  totalElements: number;
+  updatingId: string | null;
+}>();
 
 const emit = defineEmits<{
-  pageChange: [page: number]
-  viewDetails: [user: UserResponse]
-  statusChange: [user: UserResponse]
-}>()
+  pageChange: [page: number];
+  viewDetails: [user: UserResponse];
+  statusChange: [user: UserResponse];
+}>();
 
-const columns: QTableColumn<UserResponse>[] = [
+const columns = computed<QTableColumn<UserResponse>[]>(() => [
   {
     name: 'name',
-    label: 'Nome',
+    label: t('register.name'),
     field: 'name',
     align: 'left',
   },
   {
     name: 'cpf',
-    label: 'CPF',
+    label: t('register.cpf'),
     field: 'cpf',
     align: 'left',
   },
   {
     name: 'email',
-    label: 'E-mail',
+    label: t('register.email'),
     field: 'email',
     align: 'left',
   },
   {
     name: 'phone',
-    label: 'Telefone',
+    label: t('register.phone'),
     field: 'phone',
     align: 'left',
   },
   {
     name: 'active',
-    label: 'Status',
+    label: t('common.status'),
     field: 'active',
     align: 'center',
   },
   {
     name: 'actions',
-    label: 'Ações',
+    label: t('common.actions'),
     field: 'id',
     align: 'center',
   },
-]
+]);
 
 function formatCpf(value: string): string {
-  return value.replace(
-    /^(\d{3})(\d{3})(\d{3})(\d{2})$/,
-    '$1.$2.$3-$4',
-  )
+  return value.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
 }
 
 function formatPhone(value: string): string {
   if (value.length === 11) {
-    return value.replace(
-      /^(\d{2})(\d{5})(\d{4})$/,
-      '($1) $2-$3',
-    )
+    return value.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
   }
 
   if (value.length === 10) {
-    return value.replace(
-      /^(\d{2})(\d{4})(\d{4})$/,
-      '($1) $2-$3',
-    )
+    return value.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
   }
 
-  return value
+  return value;
 }
 </script>
 
@@ -119,7 +113,7 @@ function formatPhone(value: string): string {
       <q-td :props="props">
         <q-badge
           :color="props.row.active ? 'positive' : 'negative'"
-          :label="props.row.active ? 'Ativo' : 'Inativo'"
+          :label="props.row.active ? $t('users.active') : $t('users.inactive')"
           class="status-badge"
         />
       </q-td>
@@ -134,22 +128,23 @@ function formatPhone(value: string): string {
             dense
             icon="visibility"
             color="primary"
-            aria-label="Visualizar usuário"
+            :aria-label="$t('users.view')"
             @click="emit('viewDetails', props.row)"
           >
             <q-tooltip>
-              Visualizar detalhes
+              {{ $t('users.details') }}
             </q-tooltip>
           </q-btn>
 
           <q-toggle
+            :aria-label="props.row.active ? $t('users.inactivate') : $t('users.activate')"
             :model-value="props.row.active"
             color="positive"
             :disable="updatingId !== null"
             @update:model-value="emit('statusChange', props.row)"
           >
             <q-tooltip>
-              {{ props.row.active ? 'Inativar' : 'Ativar' }}
+              {{ props.row.active ? $t('users.inactivate') : $t('users.activate') }}
             </q-tooltip>
           </q-toggle>
         </div>
@@ -158,7 +153,7 @@ function formatPhone(value: string): string {
 
     <template #no-data>
       <div class="full-width text-center q-pa-lg">
-        Nenhum usuário encontrado.
+        {{ $t('users.empty') }}
       </div>
     </template>
   </q-table>

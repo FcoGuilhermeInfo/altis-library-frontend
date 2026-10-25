@@ -1,11 +1,10 @@
-
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/stores/authStore';
 
-import AdminDashboard from '@/components/dashboard/AdminDashboard.vue'
-import UserDashboard from '@/components/dashboard/UserDashboard.vue'
+import AdminDashboard from '@/components/dashboard/AdminDashboard.vue';
+import UserDashboard from '@/components/dashboard/UserDashboard.vue';
 
-const authStore = useAuthStore()
+const authStore = useAuthStore();
 </script>
 
 <template>
@@ -15,7 +14,7 @@ const authStore = useAuthStore()
     <UserDashboard v-else-if="authStore.isUser" />
 
     <div v-else class="access-message">
-      Não foi possível identificar a permissão do usuário.
+      {{ $t('dashboard.permissionError') }}
     </div>
   </q-page>
 </template>

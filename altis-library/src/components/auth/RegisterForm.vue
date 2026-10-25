@@ -1,5 +1,17 @@
 <script setup lang="ts">
-import { requiredRule, emailRule, nameRule, cpfRule, phoneRule, passwordRule, confirmPasswordRule, birthDateRule, gmailRule } from '@/utils/validationRules';
+import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
+import { useLocalizedValidation } from '@/utils/localizedValidation';
+import {
+  requiredRule,
+  emailRule,
+  nameRule,
+  cpfRule,
+  phoneRule,
+  passwordRule,
+  confirmPasswordRule,
+  birthDateRule,
+  gmailRule,
+} from '@/utils/validationRules';
 import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -26,239 +38,244 @@ const showConfirmPassword = ref(false);
 const { locale } = useI18n({ useScope: 'global' });
 
 const birthDateFormat = computed(() => {
-    return locale.value === 'en-US' ? 'MM/DD/YYYY' : 'DD/MM/YYYY';
-})
+  return locale.value === 'en-US' ? 'MM/DD/YYYY' : 'DD/MM/YYYY';
+});
 
 watch(locale, (newLocale, oldLocale) => {
-    if (!birthDate.value) {
+  if (!birthDate.value) {
     return;
-}
+  }
 
-const isoDate = toISODate(
-    birthDate.value, 
-    oldLocale,
-)
+  const isoDate = toISODate(birthDate.value, oldLocale);
 
-if (isoDate) {
-    birthDate.value = formatISODate(
-        isoDate,
-        newLocale,
-    )
-} else {
-    birthDate.value = '';  
-}    
+  if (isoDate) {
+    birthDate.value = formatISODate(isoDate, newLocale);
+  } else {
+    birthDate.value = '';
+  }
+});
 
-})
+async function onSubmit() {
+  const isoDate = toISODate(birthDate.value, locale.value);
 
-async function onSubmit(){
-    
-    const isoDate  = toISODate(
-        birthDate.value,
-        locale.value,
-    )
+  if (!isoDate) {
+    submitError.value = 'validation.birthDate';
+    return;
+  }
 
-    if (!isoDate) {
-        submitError.value = 'Informe uma data de nascimento válida.'
-        return
-    }
+  loading.value = true;
+  submitError.value = '';
 
-    loading.value = true
-    submitError.value = ''
+  try {
+    await userService.register({
+      name: name.value.trim(),
+      birthDate: formatISODate(isoDate, 'pt-BR'),
+      cpf: cpf.value,
+      phone: phone.value,
+      address: address.value.trim(),
+      email: email.value.trim(),
+      password: password.value,
+    });
 
-    try {
-        await userService.register({
-            name: name.value.trim(),
-            birthDate: formatISODate(isoDate, 'pt-BR'),
-            cpf: cpf.value,
-            phone: phone.value,
-            address: address.value.trim(),
-            email: email.value.trim(),
-            password: password.value,
-        })
-
-        await router.replace('/login') 
-    } catch (error: unknown) {
-        console.error('Erro ao cadastrar usuário:', error)
-        submitError.value = 'Não foi possível realizar o cadastro.'
-    } finally {
-        loading.value = false
-    }
+    await router.replace('/login');
+  } catch (error: unknown) {
+    reportApiError(error);
+    submitError.value = getApiErrorKey(error, 'register.error');
+  } finally {
+    loading.value = false;
+  }
 }
 
 function goToLogin() {
-    void router.push('/login');
+  void router.push('/login');
 }
+const localizedForm = useLocalizedValidation();
 </script>
 
 <template>
-    <div class="register-container">
-        <h1 class="register-title"> {{  $t('register.title') }}</h1>
+  <div class="register-container">
+    <h1 class="register-title">{{ $t('register.title') }}</h1>
 
-        <q-form class="register-form" @submit="onSubmit">
-            <q-input
-                v-model="name"
-                filled
-                bg-color="grey-4"
-                :label="$t('register.name')"
-                class="register-input"
-                autocomplete="name"
-                :rules="[requiredRule, nameRule]"
-                lazy-rules="ondemand"
-            >
-                <template #prepend>
-                    <q-icon name="person_outline" />
-                </template>
-            </q-input>
-            
-            <q-input
-                v-model="birthDate"
-                filled
-                bg-color="grey-4"
-                mask="##/##/####"
-                :label="$t('register.birthDate')"
-                :hint="birthDateFormat"
-                class="register-input"
-                :rules="[requiredRule, birthDateRule]"
-                lazy-rules="ondemand"
-            >
-                <template #prepend>
-                    <q-icon name="calendar_month" />
-                </template>
-            </q-input>
+    <q-form ref="localizedForm" class="register-form" @submit="onSubmit">
+      <q-input
+        v-model="name"
+        filled
+        bg-color="grey-4"
+        :label="$t('register.name')"
+        class="register-input"
+        autocomplete="name"
+        :rules="[requiredRule, nameRule]"
+        lazy-rules="ondemand"
+      >
+        <template #prepend>
+          <q-icon name="person_outline" />
+        </template>
+      </q-input>
 
-            <q-input
-                v-model="cpf"
-                filled
-                bg-color="grey-4"
-                mask="###.###.###-##"
-                unmasked-value
-                :label="$t('register.cpf')"
-                class="register-input"
-                :rules="[requiredRule, cpfRule]"
-                lazy-rules="ondemand"
-            >
-                <template #prepend>
-                    <q-icon name="badge" />
-                </template>
-            </q-input>
+      <q-input
+        v-model="birthDate"
+        filled
+        bg-color="grey-4"
+        mask="##/##/####"
+        :label="$t('register.birthDate')"
+        :hint="birthDateFormat"
+        class="register-input"
+        :rules="[requiredRule, birthDateRule]"
+        lazy-rules="ondemand"
+      >
+        <template #prepend>
+          <q-icon name="calendar_month" />
+        </template>
+      </q-input>
 
-            <q-input
-                v-model="phone"
-                filled
-                bg-color="grey-4"
-                mask="(##) #####-####"
-                unmasked-value
-                :label="$t('register.phone')"
-                class="register-input"
-                autocomplete="tel"
-                :rules="[requiredRule, phoneRule]"
-                lazy-rules="ondemand"
-            >
-                <template #prepend>
-                    <q-icon name="phone" />
-                </template>
-            </q-input>
+      <q-input
+        v-model="cpf"
+        filled
+        bg-color="grey-4"
+        mask="###.###.###-##"
+        unmasked-value
+        :label="$t('register.cpf')"
+        class="register-input"
+        :rules="[requiredRule, cpfRule]"
+        lazy-rules="ondemand"
+      >
+        <template #prepend>
+          <q-icon name="badge" />
+        </template>
+      </q-input>
 
-            <q-input
-                v-model="address"
-                filled
-                bg-color="grey-4"
-                :label="$t('register.address')"
-                class="register-input"
-                autocomplete="street-address"
-                :rules="[requiredRule]"
-                lazy-rules="ondemand"
-            >
-                <template #prepend>
-                    <q-icon name="location_on" />
-                </template>
-            </q-input>
+      <q-input
+        v-model="phone"
+        filled
+        bg-color="grey-4"
+        mask="(##) #####-####"
+        unmasked-value
+        :label="$t('register.phone')"
+        class="register-input"
+        autocomplete="tel"
+        :rules="[requiredRule, phoneRule]"
+        lazy-rules="ondemand"
+      >
+        <template #prepend>
+          <q-icon name="phone" />
+        </template>
+      </q-input>
 
-            <q-input
-                v-model="email"
-                filled
-                bg-color="grey-4"
-                type="email"
-                :label="$t('register.email')"
-                class="register-input"
-                autocomplete="email"
-                :rules="[requiredRule, emailRule, gmailRule]"
-                lazy-rules="ondemand"
-            >
-                <template #prepend>
-                    <q-icon name="mail_outline" />
-                </template>
-            </q-input>
+      <q-input
+        v-model="address"
+        filled
+        bg-color="grey-4"
+        :label="$t('register.address')"
+        class="register-input"
+        autocomplete="street-address"
+        :rules="[requiredRule]"
+        lazy-rules="ondemand"
+      >
+        <template #prepend>
+          <q-icon name="location_on" />
+        </template>
+      </q-input>
 
-            <q-input
-                v-model="password"
-                filled
-                bg-color="grey-4"
-                :type="showPassword ? 'text' : 'password'"
-                :label="$t('register.password')"
-                class="register-input"
-                autocomplete="new-password"
-                :rules="[requiredRule, passwordRule]"
-                lazy-rules="ondemand"
-            >
-                <template #prepend>
-                    <q-icon name="key" />
-                </template>
+      <q-input
+        v-model="email"
+        filled
+        bg-color="grey-4"
+        type="email"
+        :label="$t('register.email')"
+        class="register-input"
+        autocomplete="email"
+        :rules="[requiredRule, emailRule, gmailRule]"
+        lazy-rules="ondemand"
+      >
+        <template #prepend>
+          <q-icon name="mail_outline" />
+        </template>
+      </q-input>
 
-                <template #append>
-                    <q-icon
-                        :name="showPassword ? 'visibility_off' : 'visibility'"
-                        class="cursor-pointer"
-                        @click="showPassword = !showPassword"
-                    />
-                </template>
-            </q-input>
+      <q-input
+        v-model="password"
+        filled
+        bg-color="grey-4"
+        :type="showPassword ? 'text' : 'password'"
+        :label="$t('register.password')"
+        class="register-input"
+        autocomplete="new-password"
+        :rules="[requiredRule, passwordRule]"
+        lazy-rules="ondemand"
+      >
+        <template #prepend>
+          <q-icon name="key" />
+        </template>
 
-            <q-input
-                v-model="confirmPassword"
-                filled
-                bg-color="grey-4"
-                :type="showConfirmPassword ? 'text' : 'password'"
-                :label="$t('register.confirmPassword')"
-                class="register-input"
-                autocomplete="new-password"
-                :rules="[requiredRule, confirmPasswordRule(password)]"
-                lazy-rules="ondemand"
-            >
-                <template #prepend>
-                    <q-icon name="key" />
-                </template>
+        <template #append>
+          <q-icon
+            :aria-label="showPassword ? $t('common.hidePassword') : $t('common.showPassword')"
+            role="button"
+            tabindex="0"
+            @keydown.enter.prevent="showPassword = !showPassword"
+            @keydown.space.prevent="showPassword = !showPassword"
+            :name="showPassword ? 'visibility_off' : 'visibility'"
+            class="cursor-pointer"
+            @click="showPassword = !showPassword"
+          />
+        </template>
+      </q-input>
 
-                <template #append>
-                    <q-icon
-                        :name="showConfirmPassword ? 'visibility_off' : 'visibility'"
-                        class="cursor-pointer"
-                        @click="showConfirmPassword = !showConfirmPassword"
-                    />
-                </template>
-            </q-input>
+      <q-input
+        v-model="confirmPassword"
+        filled
+        bg-color="grey-4"
+        :type="showConfirmPassword ? 'text' : 'password'"
+        :label="$t('register.confirmPassword')"
+        class="register-input"
+        autocomplete="new-password"
+        :rules="[requiredRule, confirmPasswordRule(password)]"
+        lazy-rules="ondemand"
+      >
+        <template #prepend>
+          <q-icon name="key" />
+        </template>
 
-            <q-btn
-                type="submit"
-                :label="$t('register.submit')"
-                :loading="loading"
-                :disable="loading"
-                unelevated
-                no-caps
-                class="register-button"
-            />
+        <template #append>
+          <q-icon
+            :aria-label="
+              showConfirmPassword ? $t('common.hidePassword') : $t('common.showPassword')
+            "
+            role="button"
+            tabindex="0"
+            @keydown.enter.prevent="showConfirmPassword = !showConfirmPassword"
+            @keydown.space.prevent="showConfirmPassword = !showConfirmPassword"
+            :name="showConfirmPassword ? 'visibility_off' : 'visibility'"
+            class="cursor-pointer"
+            @click="showConfirmPassword = !showConfirmPassword"
+          />
+        </template>
+      </q-input>
 
-            <div class="register-footer">
-                <q-btn
-                    flat
-                    no-caps
-                    :label="$t('register.alreadyHaveAccount')"
-                    class="login-link"
-                    @click="goToLogin"
-                />
-            </div>
-        </q-form>
-    </div>
+      <q-btn
+        type="submit"
+        :label="$t('register.submit')"
+        :loading="loading"
+        :disable="loading"
+        unelevated
+        no-caps
+        class="register-button"
+      />
+
+      <div class="register-footer">
+        <q-btn
+          flat
+          no-caps
+          :label="$t('register.alreadyHaveAccount')"
+          class="login-link"
+          @click="goToLogin"
+        />
+      </div>
+      <p v-if="submitError" class="text-negative text-center">
+        {{ $t(submitError) }}
+      </p>
+    </q-form>
+  </div>
 </template>
 
 <style scoped>

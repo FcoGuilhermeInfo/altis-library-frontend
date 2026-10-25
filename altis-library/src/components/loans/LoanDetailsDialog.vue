@@ -1,43 +1,33 @@
-
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { LoanResponse } from '@/types/loan'
+import { formatDate } from '@/utils/dateUtils';
+import { computed } from 'vue';
+import type { LoanResponse } from '@/types/loan';
 
 const props = withDefaults(
   defineProps<{
-    modelValue: boolean
-    loan: LoanResponse | null
-    loading?: boolean
+    modelValue: boolean;
+    loan: LoanResponse | null;
+    loading?: boolean;
   }>(),
   {
     loading: false,
   },
-)
+);
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-  returnBook: [id: string]
-}>()
+  'update:modelValue': [value: boolean];
+  returnBook: [id: string];
+}>();
 
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value),
-})
-
-function formatDate(value: string | null): string {
-  if (!value) return '-'
-
-  const [year, month, day] = value.slice(0, 10).split('-')
-
-  if (!year || !month || !day) return '-'
-
-  return `${day}/${month}/${year}`
-}
+});
 
 function requestReturn() {
-  if (!props.loan || props.loading) return
+  if (!props.loan || props.loading) return;
 
-  emit('returnBook', props.loan.id)
+  emit('returnBook', props.loan.id);
 }
 </script>
 
@@ -46,7 +36,7 @@ function requestReturn() {
     <q-card class="loan-details-dialog">
       <q-card-section class="dialog-header">
         <h2 class="dialog-title">
-          Realizar Empréstimo
+          {{ $t('loans.create') }}
         </h2>
 
         <q-btn
@@ -54,6 +44,7 @@ function requestReturn() {
           round
           dense
           icon="close"
+          :aria-label="$t('common.close')"
           class="close-button"
           :disable="loading"
           @click="isOpen = false"
@@ -108,7 +99,7 @@ function requestReturn() {
             v-if="loan.status !== 'RETURNED'"
             unelevated
             no-caps
-            label="Confirmar Devolução"
+            :label="$t('loans.confirmReturn')"
             :loading="loading"
             :disable="loading"
             class="return-button"
