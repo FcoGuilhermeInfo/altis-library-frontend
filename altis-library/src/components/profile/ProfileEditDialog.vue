@@ -1,78 +1,70 @@
-
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import type { QForm } from 'quasar'
+import { useLocalizedValidation } from '@/utils/localizedValidation';
+import { formatDate } from '@/utils/dateUtils';
+import { computed, ref, watch } from 'vue';
 
 interface ProfileData {
-  id: string
-  name: string
-  email: string
-  cpf: string
-  birthDate: string
-  phone: string
-  address: string
+  id: string;
+  name: string;
+  email: string;
+  cpf: string;
+  birthDate: string;
+  phone: string;
+  address: string;
 }
 
 interface ProfileUpdate {
-  name: string
-  phone: string
-  address: string
+  name: string;
+  phone: string;
+  address: string;
 }
 
 const props = withDefaults(
   defineProps<{
-    modelValue: boolean
-    profile: ProfileData
-    loading?: boolean
+    modelValue: boolean;
+    profile: ProfileData;
+    loading?: boolean;
   }>(),
   {
     loading: false,
   },
-)
+);
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-  save: [data: ProfileUpdate]
-}>()
+  'update:modelValue': [value: boolean];
+  save: [data: ProfileUpdate];
+}>();
 
-const formRef = ref<QForm | null>(null)
+const formRef = useLocalizedValidation();
 
-const name = ref('')
-const phone = ref('')
-const address = ref('')
+const name = ref('');
+const phone = ref('');
+const address = ref('');
 
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value),
-})
+});
 
 watch(
   () => props.modelValue,
   (visible) => {
-    if (!visible) return
+    if (!visible) return;
 
-    name.value = props.profile.name
-    phone.value = props.profile.phone ?? ''
-    address.value = props.profile.address ?? ''
+    name.value = props.profile.name;
+    phone.value = props.profile.phone ?? '';
+    address.value = props.profile.address ?? '';
 
-    formRef.value?.resetValidation()
+    formRef.value?.resetValidation();
   },
-)
-
-function formatDate(value: string): string {
-  if (!value) return '-'
-
-  const [year, month, day] = value.slice(0, 10).split('-')
-
-  return `${day}/${month}/${year}`
-}
+);
 
 function onSubmit() {
   emit('save', {
     name: name.value.trim(),
     phone: phone.value.replace(/\D/g, ''),
     address: address.value.trim(),
-  })
+  });
 }
 </script>
 
@@ -81,20 +73,17 @@ function onSubmit() {
     <q-card class="profile-dialog">
       <q-card-section class="dialog-header">
         <q-avatar size="70px">
-          <q-icon
-            name="account_circle"
-            size="70px"
-            color="dark"
-            />
+          <q-icon name="account_circle" size="70px" color="dark" />
         </q-avatar>
 
         <div class="header-user">
           <h2>{{ profile.name }}</h2>
-          <span>locatário</span>
+          <span>{{ $t('loans.borrower') }}</span>
         </div>
 
         <q-btn
           icon="close"
+          :aria-label="$t('common.close')"
           flat
           round
           class="close-button"
@@ -106,55 +95,60 @@ function onSubmit() {
       <q-card-section class="dialog-content">
         <q-form ref="formRef" @submit="onSubmit">
           <div class="form-field">
-            <label>Nome completo:</label>
+            <label>{{ $t('common.fullName') }}:</label>
             <q-input
               v-model="name"
+              :aria-label="$t('common.fullName')"
               filled
               dense
               bg-color="grey-3"
-              :rules="[
-                (value) =>
-                  !!value?.trim() || 'Informe seu nome.',
-              ]"
+              :rules="[(value) => !!value?.trim() || $t('validation.name')]"
               lazy-rules="ondemand"
             />
           </div>
 
           <div class="form-field">
-            <label>E-mail:</label>
+            <label>{{ $t('register.email') }}:</label>
             <q-input
               :model-value="profile.email"
+              :aria-label="$t('register.email')"
               filled
               dense
               readonly
               bg-color="grey-3"
             >
               <template #append>
-                <q-icon name="lock_outline" size="18px" />
+                <q-icon name="lock_outline" size="18px"
+                  ><q-tooltip>{{ $t('profile.readOnly') }}</q-tooltip></q-icon
+                >
               </template>
             </q-input>
           </div>
 
           <div class="form-row">
             <div class="form-field">
-              <label>CPF:</label>
+              <label>{{ $t('register.cpf') }}:</label>
               <q-input
                 :model-value="profile.cpf"
+                :aria-label="$t('register.cpf')"
                 filled
                 dense
                 readonly
                 bg-color="grey-3"
               >
                 <template #append>
-                  <q-icon name="lock_outline" size="18px" />
+                  <q-icon name="lock_outline" size="18px"
+                    ><q-tooltip>{{ $t('profile.readOnly') }}</q-tooltip></q-icon
+                  >
                 </template>
               </q-input>
             </div>
 
             <div class="form-field">
-              <label>Data de Nascimento:</label>
+              <label>{{ $t('register.birthDate') }}:</label>
               <q-input
                 :model-value="formatDate(profile.birthDate)"
+                :aria-label="$t('register.birthDate')"
                 filled
                 dense
                 readonly
@@ -163,35 +157,30 @@ function onSubmit() {
             </div>
 
             <div class="form-field">
-              <label>Telefone:</label>
+              <label>{{ $t('register.phone') }}:</label>
               <q-input
                 v-model="phone"
+                :aria-label="$t('register.phone')"
                 filled
                 dense
                 bg-color="grey-3"
                 mask="(##) #####-####"
                 unmasked-value
-                :rules="[
-                  (value) =>
-                    /^\d{10,11}$/.test(value) ||
-                    'Informe um telefone com 10 ou 11 dígitos.',
-                ]"
+                :rules="[(value) => /^\d{10,11}$/.test(value) || $t('validation.phone')]"
                 lazy-rules="ondemand"
               />
             </div>
           </div>
 
           <div class="form-field">
-            <label>Endereço:</label>
+            <label>{{ $t('register.address') }}:</label>
             <q-input
               v-model="address"
+              :aria-label="$t('register.address')"
               filled
               dense
               bg-color="grey-3"
-              :rules="[
-                (value) =>
-                  !!value?.trim() || 'Informe o endereço.',
-              ]"
+              :rules="[(value) => !!value?.trim() || $t('validation.address')]"
               lazy-rules="ondemand"
             />
           </div>
@@ -199,8 +188,7 @@ function onSubmit() {
           <div class="password-notice">
             <q-icon name="lock_outline" size="20px" />
             <span>
-              A alteração de senha estará disponível
-              quando o endpoint de segurança for implementado.
+              {{ $t('profile.passwordUnavailable') }}
             </span>
           </div>
 
@@ -209,7 +197,7 @@ function onSubmit() {
               type="submit"
               unelevated
               no-caps
-              label="Salvar Alterações"
+              :label="$t('profile.saveChanges')"
               class="save-button"
               :loading="loading"
               :disable="loading"

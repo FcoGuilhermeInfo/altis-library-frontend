@@ -1,111 +1,101 @@
-
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { useLocalizedValidation } from '@/utils/localizedValidation';
+import { formatDate as formatDisplayDate } from '@/utils/dateUtils';
+import { useI18n } from 'vue-i18n';
+import { computed, ref, watch } from 'vue';
 
-import { userService } from '@/services/userService'
-import { bookService } from '@/services/bookService'
-import { requiredRule } from '@/utils/validationRules'
+import { userService } from '@/services/userService';
+import { bookService } from '@/services/bookService';
+import { requiredRule } from '@/utils/validationRules';
 
-import type { LoanRequest } from '@/types/loan'
+import type { LoanRequest } from '@/types/loan';
+
+const { t } = useI18n({ useScope: 'global' });
 
 interface SelectOption {
-  label: string
-  value: string
+  label: string;
+  value: string;
 }
 
 const props = withDefaults(
   defineProps<{
-    modelValue: boolean
-    loading?: boolean
+    modelValue: boolean;
+    loading?: boolean;
   }>(),
   {
     loading: false,
   },
-)
+);
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-  save: [data: LoanRequest]
-}>()
+  'update:modelValue': [value: boolean];
+  save: [data: LoanRequest];
+}>();
 
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value),
-})
+});
 
-const userId = ref<string | null>(null)
-const bookId = ref<string | null>(null)
-const dueDate = ref('')
-const borrowedAt = ref('')
+const userId = ref<string | null>(null);
+const bookId = ref<string | null>(null);
+const dueDate = ref('');
+const borrowedAt = ref('');
 
-const userOptions = ref<SelectOption[]>([])
-const bookOptions = ref<SelectOption[]>([])
+const userOptions = ref<SelectOption[]>([]);
+const bookOptions = ref<SelectOption[]>([]);
 
-const loadingUsers = ref(false)
-const loadingBooks = ref(false)
+const loadingUsers = ref(false);
+const loadingBooks = ref(false);
 
-let userRequestId = 0
-let bookRequestId = 0
+let userRequestId = 0;
+let bookRequestId = 0;
 
 function getLocalDate(): string {
-  const date = new Date()
+  const date = new Date();
 
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
 
-  return `${year}-${month}-${day}`
-}
-
-function formatDisplayDate(value: string): string {
-  if (!value) return ''
-
-  const [year, month, day] = value.split('-')
-  return `${day}/${month}/${year}`
+  return `${year}-${month}-${day}`;
 }
 
 const dueDateRule = (value: string) => {
-  if (!value) return true
+  if (!value) return true;
 
-  return (
-    value > getLocalDate() ||
-    'A devolução prevista deve ser uma data futura.'
-  )
-}
+  return value > getLocalDate() || t('validation.futureReturn');
+};
 
 watch(
   () => props.modelValue,
   (visible) => {
     if (!visible) {
-      userRequestId++
-      bookRequestId++
-      return
+      userRequestId++;
+      bookRequestId++;
+      return;
     }
 
-    userId.value = null
-    bookId.value = null
-    dueDate.value = ''
-    borrowedAt.value = formatDisplayDate(getLocalDate())
+    userId.value = null;
+    bookId.value = null;
+    dueDate.value = '';
+    borrowedAt.value = getLocalDate();
 
-    userOptions.value = []
-    bookOptions.value = []
+    userOptions.value = [];
+    bookOptions.value = [];
   },
-)
+);
 
-async function filterUsers(
-  value: string,
-  update: (fn: () => void) => void,
-  abort: () => void,
-) {
-  const request = ++userRequestId
-  loadingUsers.value = true
+async function filterUsers(value: string, update: (fn: () => void) => void, abort: () => void) {
+  const request = ++userRequestId;
+  loadingUsers.value = true;
 
   try {
-    const response = await userService.findAll(value, 1, 100)
+    const response = await userService.findAll(value, 1, 100);
 
     if (request !== userRequestId || !props.modelValue) {
-      abort()
-      return
+      abort();
+      return;
     }
 
     update(() => {
@@ -114,31 +104,27 @@ async function filterUsers(
         .map((user) => ({
           label: user.name,
           value: user.id,
-        }))
-    })
+        }));
+    });
   } catch {
-    abort()
+    abort();
   } finally {
     if (request === userRequestId) {
-      loadingUsers.value = false
+      loadingUsers.value = false;
     }
   }
 }
 
-async function filterBooks(
-  value: string,
-  update: (fn: () => void) => void,
-  abort: () => void,
-) {
-  const request = ++bookRequestId
-  loadingBooks.value = true
+async function filterBooks(value: string, update: (fn: () => void) => void, abort: () => void) {
+  const request = ++bookRequestId;
+  loadingBooks.value = true;
 
   try {
-    const response = await bookService.findAll(value, 1, 100)
+    const response = await bookService.findAll(value, 1, 100);
 
     if (request !== bookRequestId || !props.modelValue) {
-      abort()
-      return
+      abort();
+      return;
     }
 
     update(() => {
@@ -147,28 +133,29 @@ async function filterBooks(
         .map((book) => ({
           label: `${book.title} — ${book.author}`,
           value: book.id,
-        }))
-    })
+        }));
+    });
   } catch {
-    abort()
+    abort();
   } finally {
     if (request === bookRequestId) {
-      loadingBooks.value = false
+      loadingBooks.value = false;
     }
   }
 }
 
 function onSubmit() {
   if (!userId.value || !bookId.value || !dueDate.value) {
-    return
+    return;
   }
 
   emit('save', {
     userId: userId.value,
     bookId: bookId.value,
     dueDate: `${dueDate.value}T23:59:59`,
-  })
+  });
 }
+const localizedForm = useLocalizedValidation();
 </script>
 
 <template>
@@ -176,7 +163,7 @@ function onSubmit() {
     <q-card class="loan-dialog">
       <q-card-section class="dialog-header">
         <h2 class="dialog-title">
-          Realizar Empréstimo
+          {{ $t('loans.create') }}
         </h2>
 
         <q-btn
@@ -184,6 +171,7 @@ function onSubmit() {
           round
           dense
           icon="close"
+          :aria-label="$t('common.close')"
           class="close-button"
           :disable="loading"
           @click="isOpen = false"
@@ -191,14 +179,14 @@ function onSubmit() {
       </q-card-section>
 
       <q-card-section class="dialog-content">
-        <q-form class="loan-form" @submit="onSubmit">
+        <q-form ref="localizedForm" class="loan-form" @submit="onSubmit">
           <q-select
             v-model="userId"
             :options="userOptions"
             :loading="loadingUsers"
             filled
             bg-color="grey-4"
-            label="Locatário"
+            :label="$t('loans.borrower')"
             use-input
             input-debounce="300"
             emit-value
@@ -216,7 +204,7 @@ function onSubmit() {
             <template #no-option>
               <q-item>
                 <q-item-section class="text-grey">
-                  Nenhum locatário encontrado.
+                  {{ $t('loans.noBorrowers') }}
                 </q-item-section>
               </q-item>
             </template>
@@ -228,7 +216,7 @@ function onSubmit() {
             :loading="loadingBooks"
             filled
             bg-color="grey-4"
-            label="Livro"
+            :label="$t('loans.book')"
             use-input
             input-debounce="300"
             emit-value
@@ -246,18 +234,18 @@ function onSubmit() {
             <template #no-option>
               <q-item>
                 <q-item-section class="text-grey">
-                  Nenhum livro disponível encontrado.
+                  {{ $t('loans.noAvailableBooks') }}
                 </q-item-section>
               </q-item>
             </template>
           </q-select>
 
           <q-input
-            v-model="borrowedAt"
+            :model-value="formatDisplayDate(borrowedAt)"
             filled
             readonly
             bg-color="grey-4"
-            label="Data do Empréstimo"
+            :label="$t('loans.borrowedAt')"
             class="loan-input"
           >
             <template #prepend>
@@ -270,11 +258,8 @@ function onSubmit() {
             filled
             readonly
             bg-color="grey-4"
-            label="Devolução Prevista"
-            :rules="[
-              () => !!dueDate || 'Selecione a data de devolução.',
-              () => dueDateRule(dueDate)
-            ]"
+            :label="$t('loans.dueDate')"
+            :rules="[() => !!dueDate || $t('validation.returnDate'), () => dueDateRule(dueDate)]"
             lazy-rules="ondemand"
             class="loan-input"
           >
@@ -285,27 +270,19 @@ function onSubmit() {
             <template #append>
               <q-icon
                 name="calendar_month"
+                :aria-label="$t('common.chooseDate')"
+                role="button"
+                tabindex="0"
                 class="cursor-pointer"
               >
-                <q-popup-proxy
-                  cover
-                  transition-show="scale"
-                  transition-hide="scale"
-                >
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
                   <q-date
                     v-model="dueDate"
                     mask="YYYY-MM-DD"
-                    :options="(date) =>
-                      date.replaceAll('/', '-') > getLocalDate()
-                    "
+                    :options="(date) => date.replaceAll('/', '-') > getLocalDate()"
                   >
                     <div class="row justify-end">
-                      <q-btn
-                        v-close-popup
-                        flat
-                        label="Fechar"
-                        color="primary"
-                      />
+                      <q-btn v-close-popup flat :label="$t('common.close')" color="primary" />
                     </div>
                   </q-date>
                 </q-popup-proxy>
@@ -318,7 +295,7 @@ function onSubmit() {
               type="submit"
               unelevated
               no-caps
-              label="Realizar Empréstimo"
+              :label="$t('loans.create')"
               :loading="loading"
               :disable="loading"
               class="submit-button"

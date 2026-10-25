@@ -1,130 +1,118 @@
-
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useQuasar } from 'quasar'
-import type { QTableColumn } from 'quasar'
+import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
+import { formatDate } from '@/utils/dateUtils';
+import { useI18n } from 'vue-i18n';
+import { computed, onMounted, ref } from 'vue';
+import { notifyLocalized } from '@/utils/localizedNotify';
+import type { QTableColumn } from 'quasar';
 
-import { dashboardService } from '@/services/dashboardService'
+import { dashboardService } from '@/services/dashboardService';
 
-import type {
-  UserDashboardResponse,
-  UserLoanDashboard,
-} from '@/types/dashboard'
+import type { UserDashboardResponse, UserLoanDashboard } from '@/types/dashboard';
 
-import type { LoanStatus } from '@/types/loan'
+import type { LoanStatus } from '@/types/loan';
 
-const $q = useQuasar()
+const { t } = useI18n({ useScope: 'global' });
 
-const dashboard = ref<UserDashboardResponse | null>(null)
-const loading = ref(false)
+const dashboard = ref<UserDashboardResponse | null>(null);
+const loading = ref(false);
 
-const columns: QTableColumn<UserLoanDashboard>[] = [
+const columns = computed<QTableColumn<UserLoanDashboard>[]>(() => [
   {
     name: 'tenant',
-    label: 'Locatário',
+    label: t('loans.borrower'),
     field: 'tenant',
     align: 'left',
   },
   {
     name: 'book',
-    label: 'Livro',
+    label: t('loans.book'),
     field: 'book',
     align: 'left',
   },
   {
     name: 'borrowedAt',
-    label: 'Data Empréstimo',
+    label: t('loans.borrowedAt'),
     field: 'borrowedAt',
     align: 'center',
   },
   {
     name: 'dueDate',
-    label: 'Devolução Prevista',
+    label: t('loans.dueDate'),
     field: 'dueDate',
     align: 'center',
   },
   {
     name: 'returnedAt',
-    label: 'Data Devolução',
+    label: t('loans.returnedAt'),
     field: 'returnedAt',
     align: 'center',
   },
   {
     name: 'status',
-    label: 'Status',
+    label: t('common.status'),
     field: 'status',
     align: 'center',
   },
-]
+]);
 
-const activeLoans = computed(() =>
-  dashboard.value?.loans.filter(
-    (loan) => loan.status !== 'RETURNED',
-  ) ?? [],
-)
+const activeLoans = computed(
+  () => dashboard.value?.loans.filter((loan) => loan.status !== 'RETURNED') ?? [],
+);
 
 async function loadDashboard() {
-  loading.value = true
+  loading.value = true;
 
   try {
-    dashboard.value = await dashboardService.getUserDashboard()
-  } catch {
-    dashboard.value = null
+    dashboard.value = await dashboardService.getUserDashboard();
+  } catch (error: unknown) {
+    reportApiError(error);
+    dashboard.value = null;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível carregar o Dashboard.',
-    })
+      message: t(getApiErrorKey(error, 'dashboard.loadError')),
+    }));
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
-
-function formatDate(value: string | null): string {
-  if (!value) return '-'
-
-  const [year, month, day] = value.slice(0, 10).split('-')
-
-  if (!year || !month || !day) return '-'
-
-  return `${day}/${month}/${year}`
 }
 
 function statusLabel(status: LoanStatus): string {
   switch (status) {
     case 'BORROWED':
-      return 'Em andamento'
+      return t('loans.status.borrowed');
     case 'OVERDUE':
-      return 'Atrasado'
+      return t('loans.status.overdue');
     case 'RETURNED':
-      return 'Finalizado'
+      return t('loans.status.returned');
   }
 }
 
 function statusColor(status: LoanStatus): string {
   switch (status) {
     case 'BORROWED':
-      return 'primary'
+      return 'primary';
     case 'OVERDUE':
-      return 'negative'
+      return 'negative';
     case 'RETURNED':
-      return 'positive'
+      return 'positive';
   }
 }
 
 onMounted(() => {
-  void loadDashboard()
-})
+  void loadDashboard();
+});
 </script>
 
 <template>
   <section class="user-dashboard">
     <h1 class="dashboard-title">
-      Dashboard
+      {{ $t('menu.dashboard') }}
     </h1>
 
     <div v-if="loading" class="feedback-container">
-      <q-spinner size="48px" color="primary" />
+      <q-spinner :aria-label="$t('common.loading')" size="48px" color="primary" />
     </div>
 
     <template v-else-if="dashboard">
@@ -136,16 +124,21 @@ onMounted(() => {
 
             <div class="stat-content">
               <span class="stat-label">
-                Livros Emprestados
+                {{ $t('dashboard.user.borrowedBooks') }}
               </span>
 
               <strong class="stat-value">
-                {{ dashboard.borrowedBooks }}/{{ dashboard.borrowingLimit }}
+                {{ $n(dashboard.borrowedBooks) }}/{{ $n(dashboard.borrowingLimit) }}
               </strong>
 
               <span class="stat-description">
-                Você pode pegar emprestado até
-                {{ dashboard.borrowingLimit }} livros
+                {{
+                  $t(
+                    'dashboard.user.borrowingLimit',
+                    { total: $n(dashboard.borrowingLimit) },
+                    dashboard.borrowingLimit,
+                  )
+                }}
               </span>
             </div>
           </div>
@@ -155,19 +148,19 @@ onMounted(() => {
 
             <div class="stat-content">
               <span class="stat-label">
-                Próxima Devolução
+                {{ $t('dashboard.user.nextReturn') }}
               </span>
 
               <strong class="stat-value">
                 {{
                   dashboard.nextReturnDate
                     ? formatDate(dashboard.nextReturnDate)
-                    : 'Nenhuma'
+                    : $t('dashboard.user.none')
                 }}
               </strong>
 
               <span class="stat-description">
-                Próxima devolução dentro do prazo
+                {{ $t('dashboard.user.nextReturnDescription') }}
               </span>
             </div>
           </div>
@@ -177,18 +170,20 @@ onMounted(() => {
 
             <div class="stat-content">
               <span class="stat-label">
-                Último Livro Emprestado
+                {{ $t('dashboard.lastBook') }}
               </span>
 
               <strong class="stat-value last-book">
-                {{ dashboard.lastBorrowedBook ?? 'Nenhum livro' }}
+                {{ dashboard.lastBorrowedBook ?? $t('dashboard.user.noBook') }}
               </strong>
 
               <span class="stat-description">
                 {{
                   dashboard.lastBorrowedAt
-                    ? `Emprestado em: ${formatDate(dashboard.lastBorrowedAt)}`
-                    : 'Nenhum empréstimo realizado'
+                    ? $t('dashboard.user.borrowedOn', {
+                        date: formatDate(dashboard.lastBorrowedAt),
+                      })
+                    : $t('dashboard.user.noLoans')
                 }}
               </span>
             </div>
@@ -199,7 +194,7 @@ onMounted(() => {
       <!-- Meus livros emprestados -->
       <q-card flat class="dashboard-panel loans-panel">
         <q-card-section class="loans-header">
-          <h2>Meus Livros Emprestados</h2>
+          <h2>{{ $t('dashboard.user.myBooks') }}</h2>
         </q-card-section>
 
         <q-card-section class="loans-table-section">
@@ -249,7 +244,7 @@ onMounted(() => {
 
             <template #no-data>
               <div class="full-width text-center q-pa-lg">
-                Você não possui empréstimos ativos.
+                {{ $t('dashboard.user.noActiveLoans') }}
               </div>
             </template>
           </q-table>
@@ -258,13 +253,13 @@ onMounted(() => {
     </template>
 
     <div v-else class="feedback-container">
-      <p>Não foi possível apresentar os dados do Dashboard.</p>
+      <p>{{ $t('dashboard.unavailable') }}</p>
 
       <q-btn
         unelevated
         no-caps
         color="primary"
-        label="Tentar novamente"
+        :label="$t('common.retry')"
         @click="loadDashboard"
       />
     </div>

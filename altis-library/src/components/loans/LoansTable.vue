@@ -1,106 +1,99 @@
-
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { QTableColumn } from 'quasar'
-import type { LoanResponse, LoanStatus } from '@/types/loan'
+import { formatDate } from '@/utils/dateUtils';
+import { useI18n } from 'vue-i18n';
+import { computed } from 'vue';
+import type { QTableColumn } from 'quasar';
+import type { LoanResponse, LoanStatus } from '@/types/loan';
+
+const { t } = useI18n({ useScope: 'global' });
 
 const props = withDefaults(
   defineProps<{
-    loans: LoanResponse[]
-    loading?: boolean
-    showActions?: boolean
+    loans: LoanResponse[];
+    loading?: boolean;
+    showActions?: boolean;
   }>(),
   {
     loading: false,
     showActions: false,
   },
-)
+);
 
 const emit = defineEmits<{
-  viewDetails: [id: string]
-}>()
+  viewDetails: [id: string];
+}>();
 
 const columns = computed<QTableColumn<LoanResponse>[]>(() => {
   const baseColumns: QTableColumn<LoanResponse>[] = [
     {
       name: 'userFullName',
-      label: 'Locatário',
+      label: t('loans.borrower'),
       field: 'userFullName',
       align: 'left',
     },
     {
       name: 'bookTitle',
-      label: 'Livro',
+      label: t('loans.book'),
       field: 'bookTitle',
       align: 'left',
     },
     {
       name: 'borrowedAt',
-      label: 'Data Empréstimo',
+      label: t('loans.borrowedAt'),
       field: 'borrowedAt',
       align: 'center',
     },
     {
       name: 'dueDate',
-      label: 'Devolução Prevista',
+      label: t('loans.dueDate'),
       field: 'dueDate',
       align: 'center',
     },
     {
       name: 'returnedAt',
-      label: 'Data Devolução',
+      label: t('loans.returnedAt'),
       field: 'returnedAt',
       align: 'center',
     },
     {
       name: 'status',
-      label: 'Status',
+      label: t('common.status'),
       field: 'status',
       align: 'center',
     },
-  ]
+  ];
 
   if (props.showActions) {
     baseColumns.push({
       name: 'actions',
-      label: 'Ações',
+      label: t('common.actions'),
       field: 'id',
       align: 'center',
-    })
+    });
   }
 
-  return baseColumns
-})
-
-function formatDate(value: string | null): string {
-  if (!value) return '-'
-
-  const [year, month, day] = value.slice(0, 10).split('-')
-
-  if (!year || !month || !day) return '-'
-
-  return `${day}/${month}/${year}`
-}
+  return baseColumns;
+});
 
 function statusLabel(status: LoanStatus): string {
   switch (status) {
     case 'BORROWED':
-      return 'Em andamento'
+      return t('loans.status.borrowed');
     case 'OVERDUE':
-      return 'Atrasado'
+      return t('loans.status.overdue');
     case 'RETURNED':
-      return 'Finalizado'
+      return t('loans.status.returned');
   }
 }
 
 function statusColor(status: LoanStatus): string {
   switch (status) {
     case 'BORROWED':
-      return 'primary'
+      return 'primary';
     case 'OVERDUE':
-      return 'negative'
+      return 'negative';
     case 'RETURNED':
-      return 'positive'
+      return 'positive';
   }
 }
 </script>
@@ -159,11 +152,11 @@ function statusColor(status: LoanStatus): string {
           dense
           icon="edit_square"
           color="primary"
-          aria-label="Visualizar empréstimo"
+          :aria-label="$t('loans.view')"
           @click="emit('viewDetails', slotProps.row.id)"
         >
           <q-tooltip>
-            Visualizar empréstimo
+            {{ $t('loans.view') }}
           </q-tooltip>
         </q-btn>
       </q-td>
@@ -171,7 +164,7 @@ function statusColor(status: LoanStatus): string {
 
     <template #no-data>
       <div class="full-width text-center q-pa-lg">
-        Nenhum empréstimo encontrado.
+        {{ $t('loans.empty') }}
       </div>
     </template>
   </q-table>

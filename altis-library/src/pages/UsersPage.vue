@@ -1,112 +1,106 @@
-
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useQuasar } from 'quasar'
-import { userService } from '@/services/userService'
-import type { UserResponse } from '@/types/user'
-import UsersTable from '@/components/users/UsersTable.vue'
-import UserDetailsDialog from '@/components/users/UserDetailsDialog.vue'
+import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
+import { useI18n } from 'vue-i18n';
+import { ref, onMounted, watch } from 'vue';
+import { notifyLocalized } from '@/utils/localizedNotify';
+import { userService } from '@/services/userService';
+import type { UserResponse } from '@/types/user';
+import UsersTable from '@/components/users/UsersTable.vue';
+import UserDetailsDialog from '@/components/users/UserDetailsDialog.vue';
 
-const $q = useQuasar()
+const { t } = useI18n({ useScope: 'global' });
 
-const users = ref<UserResponse[]>([])
-const search = ref('')
-const currentPage = ref(1)
-const totalElements = ref(0)
+const users = ref<UserResponse[]>([]);
+const search = ref('');
+const currentPage = ref(1);
+const totalElements = ref(0);
 
-const loading = ref(false)
-const updatingId = ref<string | null>(null)
+const loading = ref(false);
+const updatingId = ref<string | null>(null);
 
-const selectedUser = ref<UserResponse | null>(null)
-const showDetails = ref(false)
+const selectedUser = ref<UserResponse | null>(null);
+const showDetails = ref(false);
 
-let requestId = 0
+let requestId = 0;
 
 async function loadUsers() {
-  const currentRequest = ++requestId
+  const currentRequest = ++requestId;
 
-  loading.value = true
+  loading.value = true;
 
   try {
-    const response = await userService.findAll(
-      search.value,
-      currentPage.value,
-      10,
-    )
+    const response = await userService.findAll(search.value, currentPage.value, 10);
 
-    if (currentRequest !== requestId) return
+    if (currentRequest !== requestId) return;
 
-    users.value = response.content
-    totalElements.value = response.totalElements
-  } catch {
-    if (currentRequest !== requestId) return
+    users.value = response.content;
+    totalElements.value = response.totalElements;
+  } catch (error: unknown) {
+    reportApiError(error);
+    if (currentRequest !== requestId) return;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível carregar os usuários.',
-    })
+      message: t(getApiErrorKey(error, 'users.loadError')),
+    }));
   } finally {
     if (currentRequest === requestId) {
-      loading.value = false
+      loading.value = false;
     }
   }
 }
 
 function changePage(page: number) {
-  currentPage.value = page
-  void loadUsers()
+  currentPage.value = page;
+  void loadUsers();
 }
 
 function viewDetails(user: UserResponse) {
-  selectedUser.value = user
-  showDetails.value = true
+  selectedUser.value = user;
+  showDetails.value = true;
 }
 
 async function changeStatus(user: UserResponse) {
-  updatingId.value = user.id
+  updatingId.value = user.id;
 
   try {
     const updatedUser = user.active
       ? await userService.inactivate(user.id)
-      : await userService.activate(user.id)
+      : await userService.activate(user.id);
 
     users.value = users.value.map((currentUser) =>
-      currentUser.id === updatedUser.id
-        ? updatedUser
-        : currentUser,
-    )
+      currentUser.id === updatedUser.id ? updatedUser : currentUser,
+    );
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'positive',
-      message: updatedUser.active
-        ? 'Usuário ativado com sucesso!'
-        : 'Usuário inativado com sucesso!',
-    })
-  } catch {
-    $q.notify({
+      message: updatedUser.active ? t('users.activated') : t('users.inactivated'),
+    }));
+  } catch (error: unknown) {
+    reportApiError(error);
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível alterar o status.',
-    })
+      message: t(getApiErrorKey(error, 'users.statusError')),
+    }));
   } finally {
-    updatingId.value = null
+    updatingId.value = null;
   }
 }
 
 watch(search, () => {
-  currentPage.value = 1
-  void loadUsers()
-})
+  currentPage.value = 1;
+  void loadUsers();
+});
 
 onMounted(() => {
-  void loadUsers(
-  )
-})
+  void loadUsers();
+});
 </script>
 
 <template>
   <q-page class="users-page">
     <h1 class="users-title">
-      Usuários
+      {{ $t('menu.users') }}
     </h1>
 
     <q-card flat class="users-card">
@@ -118,7 +112,7 @@ onMounted(() => {
           rounded
           clearable
           debounce="400"
-          placeholder="Buscar Usuário por Nome"
+          :placeholder="$t('users.search')"
           class="users-search"
         >
           <template #append>
@@ -140,16 +134,19 @@ onMounted(() => {
         />
       </q-card-section>
 
-      <q-card-actions
-        align="between"
-        class="pagination-section"
-      >
+      <q-card-actions align="between" class="pagination-section">
         <span class="pagination-info">
-          Mostrando
-          {{ totalElements === 0 ? 0 : (currentPage - 1) * 10 + 1 }}
-          à
-          {{ Math.min(currentPage * 10, totalElements) }}
-          de {{ totalElements }} usuários
+          {{
+            $t(
+              'pagination.users',
+              {
+                start: $n(totalElements === 0 ? 0 : (currentPage - 1) * 10 + 1),
+                end: $n(Math.min(currentPage * 10, totalElements)),
+                total: $n(totalElements),
+              },
+              totalElements,
+            )
+          }}
         </span>
 
         <q-pagination
@@ -165,10 +162,7 @@ onMounted(() => {
       </q-card-actions>
     </q-card>
 
-    <UserDetailsDialog
-      v-model="showDetails"
-      :user="selectedUser"
-    />
+    <UserDetailsDialog v-model="showDetails" :user="selectedUser" />
   </q-page>
 </template>
 

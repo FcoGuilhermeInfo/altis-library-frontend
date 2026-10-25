@@ -1,71 +1,59 @@
-
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useQuasar } from 'quasar'
+import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
+import { formatDate } from '@/utils/dateUtils';
+import { useI18n } from 'vue-i18n';
+import { computed, onMounted, ref } from 'vue';
+import { notifyLocalized } from '@/utils/localizedNotify';
 
-import { dashboardService } from '@/services/dashboardService'
-import type { AdminDashboardResponse } from '@/types/dashboard'
+import { dashboardService } from '@/services/dashboardService';
+import type { AdminDashboardResponse } from '@/types/dashboard';
 
-const $q = useQuasar()
+const { t } = useI18n({ useScope: 'global' });
 
-const dashboard = ref<AdminDashboardResponse | null>(null)
-const loading = ref(false)
+const dashboard = ref<AdminDashboardResponse | null>(null);
+const loading = ref(false);
 
 const maxLoanCount = computed(() =>
-  Math.max(
-    0,
-    ...(dashboard.value?.topBorrowedBooks.map(
-      (book) => book.loanCount,
-    ) ?? []),
-  ),
-)
+  Math.max(0, ...(dashboard.value?.topBorrowedBooks.map((book) => book.loanCount) ?? [])),
+);
 
 async function loadDashboard() {
-  loading.value = true
+  loading.value = true;
 
   try {
-    dashboard.value = await dashboardService.getAdminDashboard()
-  } catch {
-    dashboard.value = null
+    dashboard.value = await dashboardService.getAdminDashboard();
+  } catch (error: unknown) {
+    reportApiError(error);
+    dashboard.value = null;
 
-    $q.notify({
+    notifyLocalized(() => ({
       type: 'negative',
-      message: 'Não foi possível carregar o Dashboard.',
-    })
+      message: t(getApiErrorKey(error, 'dashboard.loadError')),
+    }));
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
-function formatDate(value: string | null): string {
-  if (!value) return '-'
-
-  const [year, month, day] = value.slice(0, 10).split('-')
-
-  if (!year || !month || !day) return '-'
-
-  return `${day}/${month}/${year}`
-}
-
 function barWidth(count: number): string {
-  if (maxLoanCount.value === 0) return '0%'
+  if (maxLoanCount.value === 0) return '0%';
 
-  return `${(count / maxLoanCount.value) * 100}%`
+  return `${(count / maxLoanCount.value) * 100}%`;
 }
 
 onMounted(() => {
-  void loadDashboard()
-})
+  void loadDashboard();
+});
 </script>
 
 <template>
   <section class="admin-dashboard">
     <h1 class="dashboard-title">
-      Dashboard
+      {{ $t('menu.dashboard') }}
     </h1>
 
     <div v-if="loading" class="feedback-container">
-      <q-spinner size="48px" color="primary" />
+      <q-spinner :aria-label="$t('common.loading')" size="48px" color="primary" />
     </div>
 
     <template v-else-if="dashboard">
@@ -76,14 +64,14 @@ onMounted(() => {
             <q-icon name="menu_book" class="stat-icon" />
 
             <div class="stat-content">
-              <span class="stat-label">Total de Livros</span>
+              <span class="stat-label">{{ $t('dashboard.admin.totalBooks') }}</span>
 
               <strong class="stat-value">
-                {{ dashboard.totalBooks }}
+                {{ $n(dashboard.totalBooks) }}
               </strong>
 
               <span class="stat-description">
-                livros cadastrados
+                {{ $t('dashboard.admin.registeredBooks', dashboard.totalBooks) }}
               </span>
             </div>
           </div>
@@ -92,14 +80,14 @@ onMounted(() => {
             <q-icon name="view_list" class="stat-icon" />
 
             <div class="stat-content">
-              <span class="stat-label">Total de Editoras</span>
+              <span class="stat-label">{{ $t('dashboard.admin.totalPublishers') }}</span>
 
               <strong class="stat-value">
-                {{ dashboard.totalPublishers }}
+                {{ $n(dashboard.totalPublishers) }}
               </strong>
 
               <span class="stat-description">
-                editoras cadastradas
+                {{ $t('dashboard.admin.registeredPublishers', dashboard.totalPublishers) }}
               </span>
             </div>
           </div>
@@ -109,16 +97,16 @@ onMounted(() => {
 
             <div class="stat-content">
               <span class="stat-label">
-                Total de Empréstimos
-                <small>(este mês)</small>
+                {{ $t('dashboard.admin.totalLoans') }}
+                <small>{{ $t('dashboard.thisMonth') }}</small>
               </span>
 
               <strong class="stat-value">
-                {{ dashboard.monthlyLoans }}
+                {{ $n(dashboard.monthlyLoans) }}
               </strong>
 
               <span class="stat-description">
-                empréstimos realizados
+                {{ $t('dashboard.admin.completedLoans', dashboard.monthlyLoans) }}
               </span>
             </div>
           </div>
@@ -127,14 +115,14 @@ onMounted(() => {
             <q-icon name="people_outline" class="stat-icon" />
 
             <div class="stat-content">
-              <span class="stat-label">Total de Usuários</span>
+              <span class="stat-label">{{ $t('dashboard.admin.totalUsers') }}</span>
 
               <strong class="stat-value">
-                {{ dashboard.totalUsers }}
+                {{ $n(dashboard.totalUsers) }}
               </strong>
 
               <span class="stat-description">
-                usuários cadastrados
+                {{ $t('dashboard.admin.registeredUsers', dashboard.totalUsers) }}
               </span>
             </div>
           </div>
@@ -147,7 +135,7 @@ onMounted(() => {
           <!-- Último livro emprestado -->
           <div class="detail-card">
             <h2 class="detail-title">
-              Último Livro Emprestado
+              {{ $t('dashboard.lastBook') }}
             </h2>
 
             <template v-if="dashboard.lastLoan">
@@ -163,7 +151,7 @@ onMounted(() => {
 
               <div class="date-grid">
                 <div class="date-box">
-                  <span>data do empréstimo</span>
+                  <span>{{ $t('loans.borrowedAt') }}</span>
 
                   <strong>
                     {{ formatDate(dashboard.lastLoan.borrowedAt) }}
@@ -171,7 +159,7 @@ onMounted(() => {
                 </div>
 
                 <div class="date-box">
-                  <span>devolução</span>
+                  <span>{{ $t('loans.dueDate') }}</span>
 
                   <strong>
                     {{ formatDate(dashboard.lastLoan.dueDate) }}
@@ -181,15 +169,15 @@ onMounted(() => {
             </template>
 
             <p v-else class="empty-message">
-              Nenhum empréstimo registrado.
+              {{ $t('dashboard.noLoans') }}
             </p>
           </div>
 
           <!-- Livro mais emprestado -->
           <div class="detail-card">
             <h2 class="detail-title">
-              Livro mais emprestado
-              <span>(este mês)</span>
+              {{ $t('dashboard.admin.mostBorrowed') }}
+              <span>{{ $t('dashboard.thisMonth') }}</span>
             </h2>
 
             <template v-if="dashboard.mostBorrowedBook">
@@ -201,38 +189,30 @@ onMounted(() => {
 
               <div class="borrowed-highlight">
                 <strong>
-                  {{ dashboard.mostBorrowedBook.loanCount }}
+                  {{ $n(dashboard.mostBorrowedBook.loanCount) }}
                 </strong>
 
-                <span>livros emprestados</span>
+                <span>{{
+                  $t('dashboard.admin.borrowedCopies', dashboard.mostBorrowedBook.loanCount)
+                }}</span>
               </div>
             </template>
 
             <p v-else class="empty-message">
-              Nenhum empréstimo neste mês.
+              {{ $t('dashboard.admin.noMonthlyLoans') }}
             </p>
           </div>
 
           <!-- Top 3 livros -->
           <div class="detail-card chart-card">
             <h2 class="detail-title">
-              Top 3 Livros mais emprestados
-              <span>(este mês)</span>
+              {{ $t('dashboard.admin.topBooks') }}
+              <span>{{ $t('dashboard.thisMonth') }}</span>
             </h2>
 
-            <div
-              v-if="dashboard.topBorrowedBooks.length > 0"
-              class="chart-content"
-            >
-              <div
-                v-for="book in dashboard.topBorrowedBooks"
-                :key="book.bookId"
-                class="chart-row"
-              >
-                <span
-                  class="chart-label"
-                  :title="book.bookTitle"
-                >
+            <div v-if="dashboard.topBorrowedBooks.length > 0" class="chart-content">
+              <div v-for="book in dashboard.topBorrowedBooks" :key="book.bookId" class="chart-row">
+                <span class="chart-label" :title="book.bookTitle">
                   {{ book.bookTitle }}
                 </span>
 
@@ -246,21 +226,41 @@ onMounted(() => {
                 </div>
 
                 <strong class="chart-count">
-                  {{ book.loanCount }}
+                  {{ $n(book.loanCount) }}
                 </strong>
               </div>
 
               <div class="chart-scale">
-                <span>0%</span>
-                <span>25%</span>
-                <span>50%</span>
-                <span>75%</span>
-                <span>100%</span>
+                <span>{{
+                  new Intl.NumberFormat($i18n.locale, {
+                    style: 'percent',
+                  }).format(0.0)
+                }}</span>
+                <span>{{
+                  new Intl.NumberFormat($i18n.locale, {
+                    style: 'percent',
+                  }).format(0.25)
+                }}</span>
+                <span>{{
+                  new Intl.NumberFormat($i18n.locale, {
+                    style: 'percent',
+                  }).format(0.5)
+                }}</span>
+                <span>{{
+                  new Intl.NumberFormat($i18n.locale, {
+                    style: 'percent',
+                  }).format(0.75)
+                }}</span>
+                <span>{{
+                  new Intl.NumberFormat($i18n.locale, {
+                    style: 'percent',
+                  }).format(1.0)
+                }}</span>
               </div>
             </div>
 
             <p v-else class="empty-message">
-              Nenhum empréstimo neste mês.
+              {{ $t('dashboard.admin.noMonthlyLoans') }}
             </p>
           </div>
         </q-card-section>
@@ -268,13 +268,13 @@ onMounted(() => {
     </template>
 
     <div v-else class="feedback-container">
-      <p>Não foi possível apresentar os dados do Dashboard.</p>
+      <p>{{ $t('dashboard.unavailable') }}</p>
 
       <q-btn
         unelevated
         no-caps
         color="primary"
-        label="Tentar novamente"
+        :label="$t('common.retry')"
         @click="loadDashboard"
       />
     </div>

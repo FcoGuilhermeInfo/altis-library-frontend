@@ -1,59 +1,53 @@
-
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { formatDateTime } from '@/utils/dateUtils'
-import type {
-  PublisherRequest,
-  PublisherResponse,
-} from '@/types/publisher'
+import { useLocalizedValidation } from '@/utils/localizedValidation';
+import { useI18n } from 'vue-i18n';
+import { computed, ref, watch } from 'vue';
+import { formatDateTime } from '@/utils/dateUtils';
+import type { PublisherRequest, PublisherResponse } from '@/types/publisher';
 
-import {
-  requiredRule,
-  emailRule,
-  gmailRule,
-  phoneRule,
-} from '@/utils/validationRules'
+import { requiredRule, emailRule, gmailRule, phoneRule } from '@/utils/validationRules';
+
+const { t } = useI18n({ useScope: 'global' });
 
 const props = defineProps<{
-  modelValue: boolean
-  publisher: PublisherResponse | null
-  loading: boolean
-}>()
+  modelValue: boolean;
+  publisher: PublisherResponse | null;
+  loading: boolean;
+}>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-  save: [data: PublisherRequest]
-  delete: [id: string]
-}>()
+  'update:modelValue': [value: boolean];
+  save: [data: PublisherRequest];
+  delete: [id: string];
+}>();
 
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value),
-})
+});
 
-const isEditing = computed(() => props.publisher !== null)
+const isEditing = computed(() => props.publisher !== null);
 
-const name = ref('')
-const email = ref('')
-const phone = ref('')
-const site = ref('')
+const name = ref('');
+const email = ref('');
+const phone = ref('');
+const site = ref('');
 
 const siteRule = (value: string) =>
-  /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/\S*)?$/.test(
-    value,
-  ) || 'Informe um site válido.'
+  /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/\S*)?$/.test(value) ||
+  t('validation.website');
 
 watch(
   () => props.modelValue,
   (isVisible) => {
-    if (!isVisible) return
+    if (!isVisible) return;
 
-    name.value = props.publisher?.name ?? ''
-    email.value = props.publisher?.email ?? ''
-    phone.value = props.publisher?.phone ?? ''
-    site.value = props.publisher?.site ?? ''
+    name.value = props.publisher?.name ?? '';
+    email.value = props.publisher?.email ?? '';
+    phone.value = props.publisher?.phone ?? '';
+    site.value = props.publisher?.site ?? '';
   },
-)
+);
 
 function onSubmit() {
   emit('save', {
@@ -61,14 +55,15 @@ function onSubmit() {
     email: email.value.trim(),
     phone: phone.value,
     site: site.value.trim(),
-  })
+  });
 }
 
 function onDelete() {
-  if (!props.publisher) return
+  if (!props.publisher) return;
 
-  emit('delete', props.publisher.id)
+  emit('delete', props.publisher.id);
 }
+const localizedForm = useLocalizedValidation();
 </script>
 
 <template>
@@ -76,7 +71,7 @@ function onDelete() {
     <q-card class="publisher-dialog">
       <q-card-section class="dialog-header">
         <h2 class="dialog-title">
-          {{ isEditing ? 'Editar Editora' : 'Cadastrar Editora' }}
+          {{ isEditing ? $t('publishers.edit') : $t('publishers.create') }}
         </h2>
 
         <q-btn
@@ -84,6 +79,7 @@ function onDelete() {
           round
           dense
           icon="close"
+          :aria-label="$t('common.close')"
           class="close-button"
           :disable="loading"
           @click="isOpen = false"
@@ -91,12 +87,12 @@ function onDelete() {
       </q-card-section>
 
       <q-card-section class="dialog-content">
-        <q-form class="publisher-form" @submit="onSubmit">
+        <q-form ref="localizedForm" class="publisher-form" @submit="onSubmit">
           <q-input
             v-model="name"
             filled
             bg-color="grey-4"
-            label="Nome"
+            :label="$t('register.name')"
             class="publisher-input"
             :rules="[requiredRule]"
             lazy-rules="ondemand"
@@ -111,7 +107,7 @@ function onDelete() {
             filled
             bg-color="grey-4"
             type="email"
-            label="E-mail"
+            :label="$t('register.email')"
             class="publisher-input"
             :rules="[requiredRule, emailRule, gmailRule]"
             lazy-rules="ondemand"
@@ -125,7 +121,7 @@ function onDelete() {
             v-model="phone"
             filled
             bg-color="grey-4"
-            label="Telefone"
+            :label="$t('register.phone')"
             mask="(##) #####-####"
             unmasked-value
             class="publisher-input"
@@ -141,7 +137,7 @@ function onDelete() {
             v-model="site"
             filled
             bg-color="grey-4"
-            label="Site"
+            :label="$t('common.website')"
             class="publisher-input"
             :rules="[requiredRule, siteRule]"
             lazy-rules="ondemand"
@@ -151,17 +147,12 @@ function onDelete() {
             </template>
           </q-input>
 
-
           <div v-if="isEditing && publisher" class="publisher-dates">
             <div class="date-item">
-              <q-icon
-                name="event"
-                size="22px"
-                color="primary"
-              />
+              <q-icon name="event" size="22px" color="primary" />
 
               <div>
-                <div class="date-label">Data de criação</div>
+                <div class="date-label">{{ $t('common.createdAt') }}</div>
                 <div class="date-value">
                   {{ formatDateTime(publisher.createdAt) }}
                 </div>
@@ -169,14 +160,10 @@ function onDelete() {
             </div>
 
             <div class="date-item">
-              <q-icon
-                name="update"
-                size="22px"
-                color="primary"
-              />
+              <q-icon name="update" size="22px" color="primary" />
 
               <div>
-                <div class="date-label">Última atualização</div>
+                <div class="date-label">{{ $t('common.updatedAt') }}</div>
                 <div class="date-value">
                   {{ formatDateTime(publisher.updatedAt) }}
                 </div>
@@ -184,17 +171,13 @@ function onDelete() {
             </div>
           </div>
 
-
-          <div
-            class="form-actions"
-            :class="{ 'form-actions-edit': isEditing }"
-          >
+          <div class="form-actions" :class="{ 'form-actions-edit': isEditing }">
             <q-btn
               v-if="isEditing"
               type="button"
               unelevated
               no-caps
-              label="Excluir Editora"
+              :label="$t('publishers.delete')"
               class="delete-button"
               :disable="loading"
               @click="onDelete"
@@ -204,7 +187,7 @@ function onDelete() {
               type="submit"
               unelevated
               no-caps
-              :label="isEditing ? 'Editar' : 'Cadastrar'"
+              :label="isEditing ? $t('common.edit') : $t('common.create')"
               :loading="loading"
               :disable="loading"
               class="submit-button"

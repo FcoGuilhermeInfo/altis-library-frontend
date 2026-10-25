@@ -1,68 +1,65 @@
-
 <script setup lang="ts">
-import type { QTableColumn } from 'quasar'
-import type { PublisherResponse } from '@/types/publisher'
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import type { QTableColumn } from 'quasar';
+import type { PublisherResponse } from '@/types/publisher';
+
+const { t } = useI18n({ useScope: 'global' });
 
 defineProps<{
-  publishers: PublisherResponse[]
-  loading: boolean
-  page: number
-  totalElements: number
-}>()
+  publishers: PublisherResponse[];
+  loading: boolean;
+  page: number;
+  totalElements: number;
+}>();
 
 const emit = defineEmits<{
-  edit: [publisher: PublisherResponse]
-}>()
+  edit: [publisher: PublisherResponse];
+}>();
 
-const columns: QTableColumn<PublisherResponse>[] = [
+const columns = computed<QTableColumn<PublisherResponse>[]>(() => [
   {
     name: 'name',
-    label: 'Nome',
+    label: t('register.name'),
     field: 'name',
     align: 'left',
   },
   {
     name: 'email',
-    label: 'E-mail',
+    label: t('register.email'),
     field: 'email',
     align: 'left',
   },
   {
     name: 'phone',
-    label: 'Telefone',
+    label: t('register.phone'),
     field: 'phone',
     align: 'left',
   },
   {
     name: 'site',
-    label: 'Site',
+    label: t('common.website'),
     field: 'site',
     align: 'left',
   },
   {
     name: 'actions',
-    label: 'Ações',
+    label: t('common.actions'),
     field: 'id',
     align: 'center',
   },
-]
+]);
 
 function formatPhone(value: string): string {
   if (value.length === 11) {
-    return value.replace(
-      /^(\d{2})(\d{5})(\d{4})$/,
-      '($1) $2-$3',
-    )
+    return value.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
   }
 
   if (value.length === 10) {
-    return value.replace(
-      /^(\d{2})(\d{4})(\d{4})$/,
-      '($1) $2-$3',
-    )
+    return value.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
   }
 
-  return value
+  return value;
 }
 </script>
 
@@ -101,17 +98,17 @@ function formatPhone(value: string): string {
           dense
           icon="edit_square"
           color="primary"
-          aria-label="Editar editora"
+          :aria-label="$t('publishers.edit')"
           @click="emit('edit', props.row)"
         >
-          <q-tooltip>Editar editora</q-tooltip>
+          <q-tooltip>{{ $t('publishers.edit') }}</q-tooltip>
         </q-btn>
       </q-td>
     </template>
 
     <template #no-data>
       <div class="full-width text-center q-pa-lg">
-        Nenhuma editora encontrada.
+        {{ $t('publishers.empty') }}
       </div>
     </template>
   </q-table>

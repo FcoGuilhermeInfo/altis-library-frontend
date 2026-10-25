@@ -1,131 +1,122 @@
-
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import type { QSelectProps } from 'quasar'
+import { useLocalizedValidation } from '@/utils/localizedValidation';
+import { useI18n } from 'vue-i18n';
+import { computed, ref, watch } from 'vue';
+import type { QSelectProps } from 'quasar';
 
-import { publisherService } from '@/services/publisherService'
-import { formatDateTime } from '@/utils/dateUtils'
-import { requiredRule } from '@/utils/validationRules'
+import { publisherService } from '@/services/publisherService';
+import { formatDateTime } from '@/utils/dateUtils';
+import { requiredRule } from '@/utils/validationRules';
 
-import type {
-  BookRequest,
-  BookResponse,
-} from '@/types/book'
+import type { BookRequest, BookResponse } from '@/types/book';
+
+const { t } = useI18n({ useScope: 'global' });
 
 interface PublisherOption {
-  label: string
-  value: string
+  label: string;
+  value: string;
 }
 
 const props = withDefaults(
   defineProps<{
-    modelValue: boolean
-    book: BookResponse | null
-    loading?: boolean
+    modelValue: boolean;
+    book: BookResponse | null;
+    loading?: boolean;
   }>(),
   {
     loading: false,
   },
-)
+);
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-  save: [data: BookRequest]
-  delete: [id: string]
-}>()
+  'update:modelValue': [value: boolean];
+  save: [data: BookRequest];
+  delete: [id: string];
+}>();
 
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value),
-})
+});
 
-const isEditing = computed(() => props.book !== null)
+const isEditing = computed(() => props.book !== null);
 
-const title = ref('')
-const author = ref('')
-const releaseYear = ref<number | null>(null)
-const publisherName = ref<string | null>(null)
-const totalQuantity = ref<number | null>(null)
+const title = ref('');
+const author = ref('');
+const releaseYear = ref<number | null>(null);
+const publisherName = ref<string | null>(null);
+const totalQuantity = ref<number | null>(null);
 
-const publisherOptions = ref<PublisherOption[]>([])
-const loadingPublishers = ref(false)
+const publisherOptions = ref<PublisherOption[]>([]);
+const loadingPublishers = ref(false);
 
-let publisherRequestId = 0
+let publisherRequestId = 0;
 
 const yearRule = (value: number | null) =>
   (value !== null &&
     Number.isInteger(Number(value)) &&
     Number(value) >= 1 &&
     Number(value) <= 32767) ||
-  'Informe um ano válido.'
+  t('validation.year');
 
 const quantityRule = (value: number | null) =>
-  (value !== null &&
-    Number.isInteger(Number(value)) &&
-    Number(value) >= 1) ||
-  'A quantidade deve ser maior que zero.'
+  (value !== null && Number.isInteger(Number(value)) && Number(value) >= 1) ||
+  t('validation.quantity');
 
 watch(
   () => props.modelValue,
   (visible) => {
-    if (!visible) return
+    if (!visible) return;
 
-    title.value = props.book?.title ?? ''
-    author.value = props.book?.author ?? ''
-    releaseYear.value = props.book?.releaseYear ?? null
-    publisherName.value = props.book?.publisherName ?? null
-    totalQuantity.value = props.book?.totalQuantity ?? null
+    title.value = props.book?.title ?? '';
+    author.value = props.book?.author ?? '';
+    releaseYear.value = props.book?.releaseYear ?? null;
+    publisherName.value = props.book?.publisherName ?? null;
+    totalQuantity.value = props.book?.totalQuantity ?? null;
 
     publisherOptions.value = props.book
-      ? [{
-          label: props.book.publisherName,
-          value: props.book.publisherName,
-        }]
-      : []
+      ? [
+          {
+            label: props.book.publisherName,
+            value: props.book.publisherName,
+          },
+        ]
+      : [];
   },
-)
+);
 
-const filterPublishers: NonNullable<QSelectProps['onFilter']> = (
-  value,
-  update,
-  abort,
-) => {
-  const currentRequest = ++publisherRequestId
+const filterPublishers: NonNullable<QSelectProps['onFilter']> = (value, update, abort) => {
+  const currentRequest = ++publisherRequestId;
 
-  loadingPublishers.value = true
+  loadingPublishers.value = true;
 
-  void publisherService.findAll(value, 1, 100)
+  void publisherService
+    .findAll(value, 1, 100)
     .then((response) => {
       if (currentRequest !== publisherRequestId) {
-        abort()
-        return
+        abort();
+        return;
       }
 
       update(() => {
-        publisherOptions.value = response.content.map(
-          (publisher) => ({
-            label: publisher.name,
-            value: publisher.name,
-          }),
-        )
-      })
+        publisherOptions.value = response.content.map((publisher) => ({
+          label: publisher.name,
+          value: publisher.name,
+        }));
+      });
     })
     .catch(() => {
-      abort()
+      abort();
     })
     .finally(() => {
       if (currentRequest === publisherRequestId) {
-        loadingPublishers.value = false
+        loadingPublishers.value = false;
       }
-    })
-}
+    });
+};
 
 function onSubmit() {
-  if (
-    releaseYear.value === null ||
-    totalQuantity.value === null ||
-    !publisherName.value
-  ) return
+  if (releaseYear.value === null || totalQuantity.value === null || !publisherName.value) return;
 
   emit('save', {
     title: title.value.trim(),
@@ -133,14 +124,15 @@ function onSubmit() {
     releaseYear: Number(releaseYear.value),
     publisherName: publisherName.value,
     totalQuantity: Number(totalQuantity.value),
-  })
+  });
 }
 
 function onDelete() {
-  if (!props.book) return
+  if (!props.book) return;
 
-  emit('delete', props.book.id)
+  emit('delete', props.book.id);
 }
+const localizedForm = useLocalizedValidation();
 </script>
 
 <template>
@@ -148,7 +140,7 @@ function onDelete() {
     <q-card class="book-dialog">
       <q-card-section class="dialog-header">
         <h2 class="dialog-title">
-          {{ isEditing ? 'Editar Livro' : 'Cadastrar Livro' }}
+          {{ isEditing ? $t('books.edit') : $t('books.create') }}
         </h2>
 
         <q-btn
@@ -156,6 +148,7 @@ function onDelete() {
           round
           dense
           icon="close"
+          :aria-label="$t('common.close')"
           class="close-button"
           :disable="loading"
           @click="isOpen = false"
@@ -163,12 +156,12 @@ function onDelete() {
       </q-card-section>
 
       <q-card-section class="dialog-content">
-        <q-form class="book-form" @submit="onSubmit">
+        <q-form ref="localizedForm" class="book-form" @submit="onSubmit">
           <q-input
             v-model="title"
             filled
             bg-color="grey-4"
-            label="Título"
+            :label="$t('books.title')"
             :rules="[requiredRule]"
             lazy-rules="ondemand"
             class="book-input"
@@ -182,7 +175,7 @@ function onDelete() {
             v-model="author"
             filled
             bg-color="grey-4"
-            label="Autor"
+            :label="$t('books.author')"
             :rules="[requiredRule]"
             lazy-rules="ondemand"
             class="book-input"
@@ -197,7 +190,7 @@ function onDelete() {
             filled
             bg-color="grey-4"
             type="number"
-            label="Ano"
+            :label="$t('books.year')"
             :rules="[yearRule]"
             lazy-rules="ondemand"
             class="book-input"
@@ -213,16 +206,13 @@ function onDelete() {
             :loading="loadingPublishers"
             filled
             bg-color="grey-4"
-            label="Editora"
+            :label="$t('books.publisher')"
             use-input
             input-debounce="300"
             emit-value
             map-options
             clearable
-            :rules="[
-              (value: string | null) =>
-                !!value || 'Selecione uma editora.'
-            ]"
+            :rules="[(value: string | null) => !!value || $t('validation.publisher')]"
             lazy-rules="ondemand"
             class="book-input"
             @filter="filterPublishers"
@@ -234,7 +224,7 @@ function onDelete() {
             <template #no-option>
               <q-item>
                 <q-item-section class="text-grey">
-                  Nenhuma editora encontrada.
+                  {{ $t('publishers.empty') }}
                 </q-item-section>
               </q-item>
             </template>
@@ -245,7 +235,7 @@ function onDelete() {
             filled
             bg-color="grey-4"
             type="number"
-            label="Quantidade total"
+            :label="$t('books.totalQuantity')"
             :rules="[quantityRule]"
             lazy-rules="ondemand"
             class="book-input"
@@ -255,15 +245,12 @@ function onDelete() {
             </template>
           </q-input>
 
-          <div
-            v-if="isEditing && book"
-            class="book-dates"
-          >
+          <div v-if="isEditing && book" class="book-dates">
             <div class="date-item">
               <q-icon name="event" size="22px" />
               <div>
                 <div class="date-label">
-                  Data de criação
+                  {{ $t('common.createdAt') }}
                 </div>
                 <div class="date-value">
                   {{ formatDateTime(book.createdAt) }}
@@ -275,7 +262,7 @@ function onDelete() {
               <q-icon name="update" size="22px" />
               <div>
                 <div class="date-label">
-                  Última atualização
+                  {{ $t('common.updatedAt') }}
                 </div>
                 <div class="date-value">
                   {{ formatDateTime(book.updatedAt) }}
@@ -284,16 +271,13 @@ function onDelete() {
             </div>
           </div>
 
-          <div
-            class="form-actions"
-            :class="{ 'form-actions-edit': isEditing }"
-          >
+          <div class="form-actions" :class="{ 'form-actions-edit': isEditing }">
             <q-btn
               v-if="isEditing"
               type="button"
               unelevated
               no-caps
-              label="Excluir Livro"
+              :label="$t('books.delete')"
               class="delete-button"
               :disable="loading"
               @click="onDelete"
@@ -303,7 +287,7 @@ function onDelete() {
               type="submit"
               unelevated
               no-caps
-              :label="isEditing ? 'Editar' : 'Cadastrar'"
+              :label="isEditing ? $t('common.edit') : $t('common.create')"
               :loading="loading"
               :disable="loading"
               class="submit-button"

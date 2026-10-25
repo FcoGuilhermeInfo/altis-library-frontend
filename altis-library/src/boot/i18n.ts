@@ -1,34 +1,47 @@
 import { defineBoot } from '#q-app';
+import { watch } from 'vue';
+import { Lang } from 'quasar';
+import enUS from 'quasar/lang/en-US';
+import ptBR from 'quasar/lang/pt-BR';
+import es from 'quasar/lang/es';
+import { i18n, isMessageLanguage } from '@/utils/i18n';
+import type { MessageSchema } from '@/utils/i18n';
 
-import { createI18n } from 'vue-i18n';
+export type { MessageLanguages, MessageSchema } from '@/utils/i18n';
 
-import messages from '@/i18n';
-
-export type MessageLanguages = keyof typeof messages;
-// Type-define 'en-US' as the master schema for the resource
-export type MessageSchema = (typeof messages)['en-US'];
-
-// See https://vue-i18n.intlify.dev/guide/advanced/typescript.html#global-resource-schema-type-definition
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 declare module 'vue-i18n' {
-  // define the locale messages schema
   export interface DefineLocaleMessage extends MessageSchema {}
-
-  // define the datetime format schema
   export interface DefineDateTimeFormat {}
-
-  // define the number format schema
   export interface DefineNumberFormat {}
 }
 /* eslint-enable @typescript-eslint/no-empty-object-type */
 
-export default defineBoot(({ app }) => {
-  const i18n = createI18n<{ message: MessageSchema }, MessageLanguages>({
-    locale: 'en-US',
-    legacy: false,
-    messages,
-  });
+const languagePacks = { 'en-US': enUS, 'pt-BR': ptBR, 'es-ES': es };
 
-  // Set i18n instance on app
+export default defineBoot(({ app }) => {
+  try {
+    const savedLocale = localStorage.getItem('lokbooks.locale');
+    if (isMessageLanguage(savedLocale)) i18n.global.locale.value = savedLocale;
+  } catch {
+    // Storage can be unavailable; language switching still works for this session.
+  }
+
   app.use(i18n);
+
+  const stop = watch(
+    i18n.global.locale,
+    (locale) => {
+      // Official packs and Lang.set disagree on optional callback arguments in 2.33.
+      Lang.set(languagePacks[locale] as Parameters<typeof Lang.set>[0]);
+      document.documentElement.lang = locale;
+      try {
+        localStorage.setItem('lokbooks.locale', locale);
+      } catch {
+        // Persistence is optional.
+      }
+    },
+    { immediate: true },
+  );
+  app.onUnmount(stop);
 });

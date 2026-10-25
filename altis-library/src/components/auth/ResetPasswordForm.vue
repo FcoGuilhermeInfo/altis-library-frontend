@@ -1,158 +1,167 @@
 <script setup lang="ts">
-import { ref, onMounted} from 'vue'
+import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
+import { useLocalizedValidation } from '@/utils/localizedValidation';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { authService } from '@/services/authService';
 import { passwordResetStorage } from '@/utils/passwordResetStorage';
-import {
-    requiredRule,
-    passwordRule,
-    confirmPasswordRule,
-} from '@/utils/validationRules'
-import { useQuasar } from 'quasar';
+import { requiredRule, passwordRule, confirmPasswordRule } from '@/utils/validationRules';
+import { notifyLocalized } from '@/utils/localizedNotify';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n({ useScope: 'global'})
+const { t } = useI18n({ useScope: 'global' });
 
-const $q = useQuasar()
-const router = useRouter()
+const router = useRouter();
 
-const password = ref('')
-const confirmPassword = ref('')
+const password = ref('');
+const confirmPassword = ref('');
 
-const showPassword = ref(false)
-const showConfirmPassword = ref(false)
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 
-const loading = ref(false)
-const submitError = ref('')
+const loading = ref(false);
+const submitError = ref('');
 
 onMounted(() => {
-    if(!passwordResetStorage.get()) {
-        void router.replace('/forgot-password')
-    }
-})
+  if (!passwordResetStorage.get()) {
+    void router.replace('/forgot-password');
+  }
+});
 
 function goBack() {
-    void router.push('/forgot-password')
+  void router.push('/forgot-password');
 }
 
 async function onSubmit() {
-    const token = passwordResetStorage.get()
+  const token = passwordResetStorage.get();
 
-    if (!token) {
-        await router.replace('/forgot-password')
-        return
-    }
+  if (!token) {
+    await router.replace('/forgot-password');
+    return;
+  }
 
-    loading.value = true
-    submitError.value = ''
+  loading.value = true;
+  submitError.value = '';
 
-    try {
-        await authService.resetPassword({
-            token,
-            newPassword: password.value,
-            confirmPassword: confirmPassword.value,
-        })
+  try {
+    await authService.resetPassword({
+      token,
+      newPassword: password.value,
+      confirmPassword: confirmPassword.value,
+    });
 
-        passwordResetStorage.clear()
+    passwordResetStorage.clear();
 
-        await router.replace('/login')
+    await router.replace('/login');
 
-        $q.notify({
-            type: 'positive',
-            message: t('resetPassword.success'),
-            caption: t('resetPassword.successCaption'),
-            position: 'top',
-            timeout: 4000,
-        })
-    } catch {
-        submitError.value = t('resetPassword.error')
-    } finally {
-        loading.value = false
-    }
+    notifyLocalized(() => ({
+      type: 'positive',
+      message: t('resetPassword.success'),
+      caption: t('resetPassword.successCaption'),
+      position: 'top',
+      timeout: 4000,
+    }));
+  } catch (error: unknown) {
+    reportApiError(error);
+    submitError.value = getApiErrorKey(error, 'resetPassword.error');
+  } finally {
+    loading.value = false;
+  }
 }
+const localizedForm = useLocalizedValidation();
 </script>
 
 <template>
-    <section class="reset-container">
-        <q-btn 
-            flat
-            round
-            icon="arrow_back"
-            class="reset-back"
-            :aria-label="$t('resetPassword.back')"
-            @click="goBack"
-        />
+  <section class="reset-container">
+    <q-btn
+      flat
+      round
+      icon="arrow_back"
+      class="reset-back"
+      :aria-label="$t('resetPassword.back')"
+      @click="goBack"
+    />
 
-        <h1 class="reset-title">
-            {{  $t('resetPassword.title') }}
-        </h1>
+    <h1 class="reset-title">
+      {{ $t('resetPassword.title') }}
+    </h1>
 
-        <q-form class="reset-form" @submit="onSubmit">
-            <q-input
-                v-model="password"
-                filled
-                bg-color="grey-4"
-                :type="showPassword ? 'text' : 'password'"
-                :label="$t('resetPassword.password')"
-                autocomplete="new-password"
-                :rules="[requiredRule, passwordRule]"
-                lazy-rules="ondemand"
-                class="reset-input"
-            >
-            
-            <template #prepend>
-                <q-icon name="key" />
-            </template>
+    <q-form ref="localizedForm" class="reset-form" @submit="onSubmit">
+      <q-input
+        v-model="password"
+        filled
+        bg-color="grey-4"
+        :type="showPassword ? 'text' : 'password'"
+        :label="$t('resetPassword.password')"
+        autocomplete="new-password"
+        :rules="[requiredRule, passwordRule]"
+        lazy-rules="ondemand"
+        class="reset-input"
+      >
+        <template #prepend>
+          <q-icon name="key" />
+        </template>
 
-            <template #append>
-                <q-icon
-                    :name="showPassword ? 'visibility_off' : 'visibility'"
-                    class="cursor-pointer"
-                    @click="showPassword = !showPassword"
-                />
-            </template>
-        </q-input>
+        <template #append>
+          <q-icon
+            :aria-label="showPassword ? $t('common.hidePassword') : $t('common.showPassword')"
+            role="button"
+            tabindex="0"
+            @keydown.enter.prevent="showPassword = !showPassword"
+            @keydown.space.prevent="showPassword = !showPassword"
+            :name="showPassword ? 'visibility_off' : 'visibility'"
+            class="cursor-pointer"
+            @click="showPassword = !showPassword"
+          />
+        </template>
+      </q-input>
 
-        <q-input
-                v-model="confirmPassword"
-                filled
-                bg-color="grey-4"
-                :type="showConfirmPassword ? 'text' : 'password'"
-                :label="$t('resetPassword.confirmPassword')"
-                autocomplete="new-password"
-                :rules="[requiredRule, confirmPasswordRule(password)]"
-                lazy-rules="ondemand"
-                class="reset-input"
-            >
-            
-            <template #prepend>
-                <q-icon name="key" />
-            </template>
+      <q-input
+        v-model="confirmPassword"
+        filled
+        bg-color="grey-4"
+        :type="showConfirmPassword ? 'text' : 'password'"
+        :label="$t('resetPassword.confirmPassword')"
+        autocomplete="new-password"
+        :rules="[requiredRule, confirmPasswordRule(password)]"
+        lazy-rules="ondemand"
+        class="reset-input"
+      >
+        <template #prepend>
+          <q-icon name="key" />
+        </template>
 
-            <template #append>
-                <q-icon
-                    :name="showConfirmPassword ? 'visibility_off' : 'visibility'"
-                    class="cursor-pointer"
-                    @click="showConfirmPassword = !showConfirmPassword"
-                />
-            </template>
-        </q-input>
+        <template #append>
+          <q-icon
+            :aria-label="
+              showConfirmPassword ? $t('common.hidePassword') : $t('common.showPassword')
+            "
+            role="button"
+            tabindex="0"
+            @keydown.enter.prevent="showConfirmPassword = !showConfirmPassword"
+            @keydown.space.prevent="showConfirmPassword = !showConfirmPassword"
+            :name="showConfirmPassword ? 'visibility_off' : 'visibility'"
+            class="cursor-pointer"
+            @click="showConfirmPassword = !showConfirmPassword"
+          />
+        </template>
+      </q-input>
 
-        <q-btn
-            type="submit"
-            :label="$t('resetPassword.submit')"
-            :loading="loading"
-            :disable="loading"
-            unelevated
-            no-caps
-            class="reset-button"
-        />
+      <q-btn
+        type="submit"
+        :label="$t('resetPassword.submit')"
+        :loading="loading"
+        :disable="loading"
+        unelevated
+        no-caps
+        class="reset-button"
+      />
 
-            <p v-if="submitError" class="text-negative text-center">
-                {{ submitError }}
-            </p>
-        </q-form>
-    </section>
+      <p v-if="submitError" class="text-negative text-center">
+        {{ $t(submitError) }}
+      </p>
+    </q-form>
+  </section>
 </template>
 
 <style scoped>

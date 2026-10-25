@@ -1,36 +1,35 @@
-
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 const props = withDefaults(
   defineProps<{
-    modelValue: boolean
-    message: string
-    loading?: boolean
+    modelValue: boolean;
+    message: string;
+    loading?: boolean;
   }>(),
   {
     loading: false,
   },
-)
+);
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-  confirm: []
-}>()
+  'update:modelValue': [value: boolean];
+  confirm: [];
+}>();
 
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value),
-})
+});
 
 function cancel() {
-  if (props.loading) return
-  isOpen.value = false
+  if (props.loading) return;
+  isOpen.value = false;
 }
 
 function confirm() {
-  if (props.loading) return
-  emit('confirm')
+  if (props.loading) return;
+  emit('confirm');
 }
 </script>
 
@@ -45,7 +44,7 @@ function confirm() {
         <q-btn
           unelevated
           no-caps
-          label="Cancelar"
+          :label="$t('common.cancel')"
           class="cancel-button"
           :disable="loading"
           @click="cancel"
@@ -54,7 +53,7 @@ function confirm() {
         <q-btn
           unelevated
           no-caps
-          label="Sim"
+          :label="$t('common.yes')"
           class="accept-button"
           :loading="loading"
           :disable="loading"
