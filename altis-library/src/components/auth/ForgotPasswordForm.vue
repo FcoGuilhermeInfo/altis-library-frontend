@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import { requiredRule, emailRule, cpfRule } from '@/utils/validationRules';
 import { authService } from '@/services/authService';
 import { passwordResetStorage } from '@/utils/passwordResetStorage';
+import { unexpectedResponse } from '@/utils/apiResponses';
 
 const router = useRouter();
 
@@ -28,7 +29,7 @@ async function onSubmit() {
     });
 
     if (!response.token) {
-      throw new Error('Token de recuperação não recebido.');
+      unexpectedResponse();
     }
 
     passwordResetStorage.save(response.token);
@@ -122,66 +123,66 @@ const localizedForm = useLocalizedValidation();
 
 <style scoped>
 .forgot-container {
-    width: 100%;
-    max-width: 620px;
-    padding: 12px 16px;
+  width: 100%;
+  max-width: 620px;
+  padding: 12px 16px;
 }
 
 .forgot-title {
-    margin: 0 0 80px;
-    font-size: 48px;
-    font-weight: 300;
-    text-align: center;
-    line-height: 1.2;
+  margin: 0 0 80px;
+  font-size: 48px;
+  font-weight: 300;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .forgot-form {
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .forgot-input {
-    width: 100%;
+  width: 100%;
 }
 
-.forgot-input :deep(.q-field__control){
-    border-radius: 0;
+.forgot-input :deep(.q-field__control) {
+  border-radius: 0;
 }
 
 .forgot-input :deep(.q-field__native),
 .forgot-input :deep(.q-field__label) {
-    font-size: 16px;
+  font-size: 16px;
 }
 
 .forgot-button {
-    align-self: center;
-    width: 240px;
-    min-height: 52px;
-    margin-top: 16px;
-    border-radius: 28px;
-    background-color: #0b717f !important;
-    color: white !important;
-    font-size: 17px;
+  align-self: center;
+  width: 240px;
+  min-height: 52px;
+  margin-top: 16px;
+  border-radius: 28px;
+  background-color: #0b717f !important;
+  color: white !important;
+  font-size: 17px;
 }
 
 .forgot-divider {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 56px 16px 32px;
-    color: #777;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 56px 16px 32px;
+  color: #777;
 }
 
 .forgot-divider .q-separator {
-    flex: 1;
+  flex: 1;
 }
 
 .forgot-back {
-    display: flex;
-    margin: 0 auto;
-    color: #0b717f !important;
-    font-size: 16px;
-    font-weight: 600;
+  display: flex;
+  margin: 0 auto;
+  color: #0b717f !important;
+  font-size: 16px;
+  font-weight: 600;
 }
 </style>

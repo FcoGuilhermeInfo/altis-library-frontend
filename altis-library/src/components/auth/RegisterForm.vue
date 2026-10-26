@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
+import { getApiErrorKey, getApiFieldErrors, reportApiError } from '@/utils/apiErrors';
 import { useLocalizedValidation } from '@/utils/localizedValidation';
+import { useApiFormErrors } from '@/utils/apiFormErrors';
 import {
   requiredRule,
   emailRule,
@@ -31,6 +32,7 @@ const confirmPassword = ref('');
 
 const loading = ref(false);
 const submitError = ref('');
+const { serverFields, serverValidation } = useApiFormErrors();
 
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
@@ -65,6 +67,7 @@ async function onSubmit() {
 
   loading.value = true;
   submitError.value = '';
+  serverFields.value = [];
 
   try {
     await userService.register({
@@ -80,6 +83,7 @@ async function onSubmit() {
     await router.replace('/login');
   } catch (error: unknown) {
     reportApiError(error);
+    serverFields.value = getApiFieldErrors(error);
     submitError.value = getApiErrorKey(error, 'register.error');
   } finally {
     loading.value = false;
@@ -105,6 +109,7 @@ const localizedForm = useLocalizedValidation();
         class="register-input"
         autocomplete="name"
         :rules="[requiredRule, nameRule]"
+        v-bind="serverValidation('name')"
         lazy-rules="ondemand"
       >
         <template #prepend>
@@ -121,6 +126,7 @@ const localizedForm = useLocalizedValidation();
         :hint="birthDateFormat"
         class="register-input"
         :rules="[requiredRule, birthDateRule]"
+        v-bind="serverValidation('birthDate')"
         lazy-rules="ondemand"
       >
         <template #prepend>
@@ -137,6 +143,7 @@ const localizedForm = useLocalizedValidation();
         :label="$t('register.cpf')"
         class="register-input"
         :rules="[requiredRule, cpfRule]"
+        v-bind="serverValidation('cpf')"
         lazy-rules="ondemand"
       >
         <template #prepend>
@@ -154,6 +161,7 @@ const localizedForm = useLocalizedValidation();
         class="register-input"
         autocomplete="tel"
         :rules="[requiredRule, phoneRule]"
+        v-bind="serverValidation('phone')"
         lazy-rules="ondemand"
       >
         <template #prepend>
@@ -169,6 +177,7 @@ const localizedForm = useLocalizedValidation();
         class="register-input"
         autocomplete="street-address"
         :rules="[requiredRule]"
+        v-bind="serverValidation('address')"
         lazy-rules="ondemand"
       >
         <template #prepend>
@@ -185,6 +194,7 @@ const localizedForm = useLocalizedValidation();
         class="register-input"
         autocomplete="email"
         :rules="[requiredRule, emailRule, gmailRule]"
+        v-bind="serverValidation('email')"
         lazy-rules="ondemand"
       >
         <template #prepend>
@@ -201,6 +211,7 @@ const localizedForm = useLocalizedValidation();
         class="register-input"
         autocomplete="new-password"
         :rules="[requiredRule, passwordRule]"
+        v-bind="serverValidation('password')"
         lazy-rules="ondemand"
       >
         <template #prepend>
@@ -230,6 +241,7 @@ const localizedForm = useLocalizedValidation();
         class="register-input"
         autocomplete="new-password"
         :rules="[requiredRule, confirmPasswordRule(password)]"
+        v-bind="serverValidation('confirmPassword')"
         lazy-rules="ondemand"
       >
         <template #prepend>
@@ -279,7 +291,6 @@ const localizedForm = useLocalizedValidation();
 </template>
 
 <style scoped>
-
 .register-container {
   width: 100%;
   max-width: 700px;
@@ -325,15 +336,12 @@ const localizedForm = useLocalizedValidation();
   color: white !important;
 }
 
-
 .register-footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
 }
-
 </style>
-

@@ -6,6 +6,8 @@ import { i18n } from './i18n';
 // Keep visible notifications translated, including those surviving navigation.
 export function notifyLocalized(options: () => QNotifyCreateOptions) {
   const initial = options();
+  if (!initial.message) return;
+
   const update = Notify.create({
     ...initial,
     group: true,

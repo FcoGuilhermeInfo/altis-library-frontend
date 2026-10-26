@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
 import { useI18n } from 'vue-i18n';
@@ -18,35 +19,37 @@ const { t } = useI18n({ useScope: 'global' });
 
 const pageSize = 10;
 
-const paginatedLoans = usePaginatedList<LoanResponse>((search, page, size) =>
-  loanService.findAll(search, page, size),
+const paginatedLoans = usePaginatedList<LoanResponse>(
+  (search, page, size) => loanService.findAll(search, page, size),
   { pageSize },
 );
 
-const { items: loans, search, currentPage, totalElements, loading, totalPages, loadPage } =
-  paginatedLoans;
+const {
+  items: loans,
+  search,
+  currentPage,
+  totalElements,
+  loading,
+  totalPages,
+  loadPage,
+} = paginatedLoans;
 
-// Últimos empréstimos finalizados
 const recentHistory = ref<LoanResponse[]>([]);
 const loadingRecentHistory = ref(false);
 
-// Histórico completo
 const showHistoryDialog = ref(false);
 const history = ref<LoanResponse[]>([]);
 const historyPage = ref(1);
 const historyTotalElements = ref(0);
 const loadingHistory = ref(false);
 
-// Registro de empréstimo
 const showCreateDialog = ref(false);
 const savingLoan = ref(false);
 
-// Detalhes e devolução
 const showDetailsDialog = ref(false);
 const selectedLoan = ref<LoanResponse | null>(null);
 const loadingDetails = ref(false);
 
-// Confirmação de devolução
 const showConfirmDialog = ref(false);
 const returningLoan = ref(false);
 const pendingReturnId = ref<string | null>(null);
@@ -57,16 +60,15 @@ const historyTotalPages = computed(() =>
 
 let historyRequestId = 0;
 
-// Buscar últimos empréstimos devolvidos
 async function loadRecentHistory() {
   loadingRecentHistory.value = true;
 
   try {
     const response = await loanService.findHistory('', 1, 5);
-
     recentHistory.value = response.content;
   } catch (error: unknown) {
     reportApiError(error);
+
     notifyLocalized(() => ({
       type: 'negative',
       message: t(getApiErrorKey(error, 'loans.recentError')),
@@ -76,13 +78,16 @@ async function loadRecentHistory() {
   }
 }
 
-// Buscar histórico completo
 async function loadHistory() {
   const currentRequest = ++historyRequestId;
   loadingHistory.value = true;
 
   try {
-    const response = await loanService.findHistory('', historyPage.value, pageSize);
+    const response = await loanService.findHistory(
+      '',
+      historyPage.value,
+      pageSize,
+    );
 
     if (currentRequest !== historyRequestId) return;
 
@@ -90,6 +95,7 @@ async function loadHistory() {
     historyTotalElements.value = response.totalElements;
   } catch (error: unknown) {
     reportApiError(error);
+
     if (currentRequest !== historyRequestId) return;
 
     notifyLocalized(() => ({
@@ -103,12 +109,10 @@ async function loadHistory() {
   }
 }
 
-// Paginação de empréstimos ativos
 function changePage(page: number) {
   paginatedLoans.changePage(page);
 }
 
-// Paginação do histórico
 function changeHistoryPage(page: number) {
   if (page === historyPage.value) return;
 
@@ -116,7 +120,6 @@ function changeHistoryPage(page: number) {
   void loadHistory();
 }
 
-// Abrir histórico completo
 function openHistory() {
   historyPage.value = 1;
   showHistoryDialog.value = true;
@@ -124,12 +127,10 @@ function openHistory() {
   void loadHistory();
 }
 
-// Abrir registro de empréstimo
 function openCreateDialog() {
   showCreateDialog.value = true;
 }
 
-// Registrar empréstimo
 async function saveLoan(data: LoanRequest) {
   if (savingLoan.value) return;
 
@@ -148,6 +149,7 @@ async function saveLoan(data: LoanRequest) {
     await loadPage();
   } catch (error: unknown) {
     reportApiError(error);
+
     notifyLocalized(() => ({
       type: 'negative',
       message: t(getApiErrorKey(error, 'loans.createError')),
@@ -157,7 +159,6 @@ async function saveLoan(data: LoanRequest) {
   }
 }
 
-// Consultar detalhes do empréstimo
 async function viewDetails(id: string) {
   if (loadingDetails.value) return;
 
@@ -168,6 +169,7 @@ async function viewDetails(id: string) {
     showDetailsDialog.value = true;
   } catch (error: unknown) {
     reportApiError(error);
+
     notifyLocalized(() => ({
       type: 'negative',
       message: t(getApiErrorKey(error, 'loans.detailsError')),
@@ -177,7 +179,6 @@ async function viewDetails(id: string) {
   }
 }
 
-// Solicitar confirmação de devolução
 function requestReturn(id: string) {
   if (returningLoan.value || showConfirmDialog.value) return;
 
@@ -185,14 +186,12 @@ function requestReturn(id: string) {
   showConfirmDialog.value = true;
 }
 
-// Cancelar confirmação
 function onConfirmDialogChange(value: boolean) {
   if (!value && !returningLoan.value) {
     pendingReturnId.value = null;
   }
 }
 
-// Confirmar devolução
 async function confirmReturn() {
   const id = pendingReturnId.value;
 
@@ -214,20 +213,18 @@ async function confirmReturn() {
       message: t('loans.returned'),
     }));
 
-    // Evitar página vazia quando o último empréstimo é devolvido
     if (loans.value.length === 1 && currentPage.value > 1) {
       currentPage.value--;
     }
 
-    // Atualizar empréstimos ativos e histórico recente
     await Promise.all([loadPage(), loadRecentHistory()]);
 
-    // Atualizar também o histórico completo, se estiver aberto
     if (showHistoryDialog.value) {
       await loadHistory();
     }
   } catch (error: unknown) {
     reportApiError(error);
+
     notifyLocalized(() => ({
       type: 'negative',
       message: t(getApiErrorKey(error, 'loans.returnError')),
@@ -237,7 +234,6 @@ async function confirmReturn() {
   }
 }
 
-// Carregar dados ao abrir a página
 onMounted(() => {
   void loadRecentHistory();
 });
@@ -245,7 +241,6 @@ onMounted(() => {
 
 <template>
   <q-page class="loans-page">
-    <!-- Empréstimos ativos -->
     <q-card flat class="loans-card">
       <q-card-section class="loans-toolbar">
         <q-input
@@ -288,8 +283,14 @@ onMounted(() => {
             $t(
               'pagination.loans',
               {
-                start: $n(totalElements === 0 ? 0 : (currentPage - 1) * pageSize + 1),
-                end: $n(Math.min(currentPage * pageSize, totalElements)),
+                start: $n(
+                  totalElements === 0
+                    ? 0
+                    : (currentPage - 1) * pageSize + 1,
+                ),
+                end: $n(
+                  Math.min(currentPage * pageSize, totalElements),
+                ),
                 total: $n(totalElements),
               },
               totalElements,
@@ -310,32 +311,48 @@ onMounted(() => {
       </q-card-actions>
     </q-card>
 
-    <!-- Histórico recente -->
     <q-card flat class="history-card">
       <q-card-section class="history-header">
         <div class="history-title">
           {{ $t('loans.recentHistory') }}
         </div>
 
-        <q-btn flat no-caps :label="$t('loans.fullHistory')" color="primary" @click="openHistory" />
+        <q-btn
+          flat
+          no-caps
+          :label="$t('loans.fullHistory')"
+          color="primary"
+          @click="openHistory"
+        />
       </q-card-section>
 
       <q-card-section class="history-table-section">
-        <LoansTable :loans="recentHistory" :loading="loadingRecentHistory" />
+        <LoansTable
+          :loans="recentHistory"
+          :loading="loadingRecentHistory"
+        />
       </q-card-section>
     </q-card>
 
-    <!-- Histórico completo -->
     <q-dialog v-model="showHistoryDialog" maximized>
       <q-card class="history-dialog">
         <q-card-section class="history-dialog-header">
           <h2>{{ $t('loans.recentHistory') }}</h2>
 
-          <q-btn v-close-popup flat round icon="close" :aria-label="$t('common.close')" />
+          <q-btn
+            v-close-popup
+            flat
+            round
+            icon="close"
+            :aria-label="$t('common.close')"
+          />
         </q-card-section>
 
         <q-card-section>
-          <LoansTable :loans="history" :loading="loadingHistory" />
+          <LoansTable
+            :loans="history"
+            :loading="loadingHistory"
+          />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -351,10 +368,12 @@ onMounted(() => {
       </q-card>
     </q-dialog>
 
-    <!-- Registrar empréstimo -->
-    <LoanFormDialog v-model="showCreateDialog" :loading="savingLoan" @save="saveLoan" />
+    <LoanFormDialog
+      v-model="showCreateDialog"
+      :loading="savingLoan"
+      @save="saveLoan"
+    />
 
-    <!-- Detalhes e devolução -->
     <LoanDetailsDialog
       v-model="showDetailsDialog"
       :loan="selectedLoan"
@@ -362,7 +381,6 @@ onMounted(() => {
       @return-book="requestReturn"
     />
 
-    <!-- Confirmação da devolução -->
     <ConfirmDialog
       v-model="showConfirmDialog"
       :message="$t('loans.returnPrompt')"
