@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
 import { useI18n } from 'vue-i18n';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { notifyLocalized } from '@/utils/localizedNotify';
 
 import BooksTable from '@/components/books/BooksTable.vue';
@@ -9,20 +9,21 @@ import { bookService } from '@/services/bookService';
 import type { BookResponse } from '@/types/book';
 import BookFormDialog from '@/components/books/BookFormDialog.vue';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
+import { usePaginatedList } from '@/composables/usePaginatedList';
 
 import type { BookRequest } from '@/types/book';
 
 const { t } = useI18n({ useScope: 'global' });
 
-const books = ref<BookResponse[]>([]);
-const search = ref<string | null>('');
-const currentPage = ref(1);
-const totalElements = ref(0);
-const loading = ref(false);
-
 const pageSize = 10;
 
-const totalPages = computed(() => Math.max(1, Math.ceil(totalElements.value / pageSize)));
+const paginatedBooks = usePaginatedList<BookResponse>((search, page, size) =>
+  bookService.findAll(search, page, size),
+  { pageSize: 10 },
+);
+
+const { items: books, search, currentPage, totalElements, loading, totalPages, loadPage } =
+  paginatedBooks;
 
 const showBookDialog = ref(false);
 const selectedBook = ref<BookResponse | null>(null);
@@ -31,7 +32,8 @@ const savingBook = ref(false);
 const showConfirmDialog = ref(false);
 
 type PendingBookAction =
-  { type: 'update'; id: string; data: BookRequest } | { type: 'delete'; id: string };
+  | { type: 'update'; id: string; data: BookRequest }
+  | { type: 'delete'; id: string };
 
 const pendingAction = ref<PendingBookAction | null>(null);
 
@@ -39,39 +41,8 @@ const confirmMessage = computed(() =>
   pendingAction.value?.type === 'delete' ? t('common.confirmDelete') : t('common.confirmUpdate'),
 );
 
-let requestId = 0;
-
-async function loadBooks() {
-  const currentRequest = ++requestId;
-  loading.value = true;
-
-  try {
-    const response = await bookService.findAll(search.value ?? '', currentPage.value, pageSize);
-
-    if (currentRequest !== requestId) return;
-
-    books.value = response.content;
-    totalElements.value = response.totalElements;
-  } catch (error: unknown) {
-    reportApiError(error);
-    if (currentRequest !== requestId) return;
-
-    notifyLocalized(() => ({
-      type: 'negative',
-      message: t(getApiErrorKey(error, 'books.loadError')),
-    }));
-  } finally {
-    if (currentRequest === requestId) {
-      loading.value = false;
-    }
-  }
-}
-
 function changePage(page: number) {
-  if (page === currentPage.value) return;
-
-  currentPage.value = page;
-  void loadBooks();
+  paginatedBooks.changePage(page);
 }
 
 function openCreateDialog() {
@@ -110,7 +81,7 @@ async function saveBook(data: BookRequest) {
       message: t('books.created'),
     }));
 
-    await loadBooks();
+    await loadPage();
   } catch (error: unknown) {
     reportApiError(error);
     notifyLocalized(() => ({
@@ -166,7 +137,7 @@ async function confirmBookAction() {
     pendingAction.value = null;
     selectedBook.value = null;
 
-    await loadBooks();
+    await loadPage();
   } catch (error: unknown) {
     reportApiError(error);
     notifyLocalized(() => ({
@@ -186,15 +157,6 @@ function onConfirmDialogChange(value: boolean) {
     pendingAction.value = null;
   }
 }
-
-watch(search, () => {
-  currentPage.value = 1;
-  void loadBooks();
-});
-
-onMounted(() => {
-  void loadBooks();
-});
 </script>
 
 <template>

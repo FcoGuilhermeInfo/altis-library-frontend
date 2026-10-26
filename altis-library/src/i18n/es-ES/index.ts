@@ -113,7 +113,7 @@ export default {
   errors: {
     generic: 'No se pudo completar la operación. Inténtalo de nuevo.',
     network: 'No se pudo conectar con el servidor. Comprueba tu conexión.',
-    unauthorized: 'Tu sesión ha caducado. Vuelve a iniciar sesión.',
+    unauthorized: 'La solicitud no está autorizada.',
     forbidden: 'No tienes permiso para realizar esta operación.',
     notFound: 'No se encontró el registro solicitado.',
     server: 'El servidor no está disponible. Inténtalo de nuevo más tarde.',

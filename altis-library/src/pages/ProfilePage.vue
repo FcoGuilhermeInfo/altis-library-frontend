@@ -7,6 +7,7 @@ import { notifyLocalized } from '@/utils/localizedNotify';
 
 import { api } from '@/boot/axios';
 import { useAuthStore } from '@/stores/authStore';
+import { userService } from '@/services/userService';
 
 import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
@@ -58,9 +59,7 @@ async function loadProfile() {
   loading.value = true;
 
   try {
-    const response = await api.get<ProfileData>(`/users/${userId}`);
-
-    profile.value = response.data;
+    profile.value = await userService.findById(userId);
   } catch (error: unknown) {
     reportApiError(error);
     profile.value = null;

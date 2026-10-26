@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
 import { useI18n } from 'vue-i18n';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { notifyLocalized } from '@/utils/localizedNotify';
 
 import PublishersTable from '@/components/publishers/PublishersTable.vue';
@@ -9,51 +9,35 @@ import { publisherService } from '@/services/publisherService';
 import type { PublisherResponse, PublisherRequest } from '@/types/publisher';
 import PublisherFormDialog from '@/components/publishers/PublisherFormDialog.vue';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
+import { usePaginatedList } from '@/composables/usePaginatedList';
 
 const { t } = useI18n({ useScope: 'global' });
+
+const paginatedPublishers = usePaginatedList<PublisherResponse>((search, page, size) =>
+  publisherService.findAll(search, page, size),
+  { pageSize: 10 },
+);
+
+const { items: publishers, search, currentPage, totalElements, loading, totalPages, loadPage } =
+  paginatedPublishers;
 
 const selectedPublisher = ref<PublisherResponse | null>(null);
 const showPublisherDialog = ref(false);
 const savingPublisher = ref(false);
 
-const publishers = ref<PublisherResponse[]>([]);
-const search = ref<string | null>('');
-const currentPage = ref(1);
-const totalElements = ref(0);
-const loading = ref(false);
+type PendingAction =
+  | { type: 'update'; id: string; data: PublisherRequest }
+  | { type: 'delete'; id: string };
 
-const totalPages = computed(() => Math.max(1, Math.ceil(totalElements.value / 10)));
-let requestId = 0;
+const showConfirmDialog = ref(false);
+const pendingAction = ref<PendingAction | null>(null);
 
-async function loadPublishers() {
-  const currentRequest = ++requestId;
-  loading.value = true;
-
-  try {
-    const response = await publisherService.findAll(search.value ?? '', currentPage.value, 10);
-
-    if (currentRequest !== requestId) return;
-
-    publishers.value = response.content;
-    totalElements.value = response.totalElements;
-  } catch (error: unknown) {
-    reportApiError(error);
-    if (currentRequest !== requestId) return;
-
-    notifyLocalized(() => ({
-      type: 'negative',
-      message: t(getApiErrorKey(error, 'publishers.loadError')),
-    }));
-  } finally {
-    if (currentRequest === requestId) {
-      loading.value = false;
-    }
-  }
-}
+const confirmMessage = computed(() =>
+  pendingAction.value?.type === 'delete' ? t('common.confirmDelete') : t('common.confirmUpdate'),
+);
 
 function changePage(page: number) {
-  currentPage.value = page;
-  void loadPublishers();
+  paginatedPublishers.changePage(page);
 }
 
 function openCreateDialog() {
@@ -92,7 +76,7 @@ async function savePublisher(data: PublisherRequest) {
       message: t('publishers.created'),
     }));
 
-    await loadPublishers();
+    await loadPage();
   } catch (error: unknown) {
     reportApiError(error);
     notifyLocalized(() => ({
@@ -114,16 +98,6 @@ function deletePublisher(id: string) {
 
   showConfirmDialog.value = true;
 }
-
-type PendingAction =
-  { type: 'update'; id: string; data: PublisherRequest } | { type: 'delete'; id: string };
-
-const showConfirmDialog = ref(false);
-const pendingAction = ref<PendingAction | null>(null);
-
-const confirmMessage = computed(() =>
-  pendingAction.value?.type === 'delete' ? t('common.confirmDelete') : t('common.confirmUpdate'),
-);
 
 async function confirmPublisherAction() {
   const action = pendingAction.value;
@@ -158,7 +132,7 @@ async function confirmPublisherAction() {
     pendingAction.value = null;
     selectedPublisher.value = null;
 
-    await loadPublishers();
+    await loadPage();
   } catch (error: unknown) {
     reportApiError(error);
     notifyLocalized(() => ({
@@ -172,15 +146,6 @@ async function confirmPublisherAction() {
     savingPublisher.value = false;
   }
 }
-
-watch(search, () => {
-  currentPage.value = 1;
-  void loadPublishers();
-});
-
-onMounted(() => {
-  void loadPublishers();
-});
 </script>
 
 <template>

@@ -113,7 +113,7 @@ export default {
   errors: {
     generic: 'Unable to complete the operation. Please try again.',
     network: 'Unable to connect to the server. Check your connection.',
-    unauthorized: 'Your session has expired. Please sign in again.',
+    unauthorized: 'This request was not authorized.',
     forbidden: 'You do not have permission to perform this operation.',
     notFound: 'The requested record was not found.',
     server: 'The server is unavailable. Please try again later.',

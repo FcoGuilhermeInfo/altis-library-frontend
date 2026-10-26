@@ -10,7 +10,7 @@ export function notifyLocalized(options: () => QNotifyCreateOptions) {
 
   const update = Notify.create({
     ...initial,
-    group: false,
+    group: true,
     onDismiss: () => {
       stop();
       initial.onDismiss?.();

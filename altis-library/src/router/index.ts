@@ -1,3 +1,4 @@
+
 import { defineRouter } from '#q-app';
 import {
   createMemoryHistory,
@@ -20,7 +21,6 @@ export default defineRouter(({ store }) => {
   const Router = createRouter({
     scrollBehavior: () => ({ left: 0, top: 0 }),
     routes,
-
     history: createHistory(import.meta.env.QUASAR_VUE_ROUTER_BASE),
   });
 
@@ -33,35 +33,41 @@ export default defineRouter(({ store }) => {
       if (!import.meta.env.SSR) {
         authStore.restoreSession();
       }
+
       sessionRestored = true;
     }
 
-    if (to.meta.requiresAuth && !authStore.isAuthenticated()) {
-      return '/login';
-    }
-
-    if (to.path === '/login' && authStore.isAuthenticated()) {
-      return '/dashboard';
-    }
-
     const allowedRoles = to.meta.roles as UserRole[] | undefined;
-
     const requiresAuth = to.meta.requiresAuth || allowedRoles !== undefined;
 
     if (requiresAuth && !authStore.isAuthenticated()) {
-      authStore.logout();
+      return '/login';
+    }
+
+    if (requiresAuth && authStore.isSessionTokenExpired()) {
+      authStore.expireSession();
       return '/login';
     }
 
     if (to.path === '/login' && authStore.isAuthenticated()) {
+      if (authStore.isSessionTokenExpired()) {
+        authStore.expireSession();
+        return true;
+      }
+
       return '/dashboard';
     }
 
     if (allowedRoles) {
-      if (!authStore.user || !allowedRoles.includes(authStore.user.role)) {
+      if (!authStore.user) {
+        return '/login';
+      }
+
+      if (!allowedRoles.includes(authStore.user.role)) {
         return '/acess-denied';
       }
     }
+
     return true;
   });
 

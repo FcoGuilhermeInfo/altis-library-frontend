@@ -1,7 +1,8 @@
+
 <script setup lang="ts">
 import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
 import { useI18n } from 'vue-i18n';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { notifyLocalized } from '@/utils/localizedNotify';
 
 import LoansTable from '@/components/loans/LoansTable.vue';
@@ -10,6 +11,7 @@ import LoanDetailsDialog from '@/components/loans/LoanDetailsDialog.vue';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 
 import { loanService } from '@/services/loanService';
+import { usePaginatedList } from '@/composables/usePaginatedList';
 
 import type { LoanRequest, LoanResponse } from '@/types/loan';
 
@@ -17,11 +19,20 @@ const { t } = useI18n({ useScope: 'global' });
 
 const pageSize = 10;
 
-const loans = ref<LoanResponse[]>([]);
-const search = ref<string | null>('');
-const currentPage = ref(1);
-const totalElements = ref(0);
-const loading = ref(false);
+const paginatedLoans = usePaginatedList<LoanResponse>(
+  (search, page, size) => loanService.findAll(search, page, size),
+  { pageSize },
+);
+
+const {
+  items: loans,
+  search,
+  currentPage,
+  totalElements,
+  loading,
+  totalPages,
+  loadPage,
+} = paginatedLoans;
 
 const recentHistory = ref<LoanResponse[]>([]);
 const loadingRecentHistory = ref(false);
@@ -43,50 +54,21 @@ const showConfirmDialog = ref(false);
 const returningLoan = ref(false);
 const pendingReturnId = ref<string | null>(null);
 
-const totalPages = computed(() => Math.max(1, Math.ceil(totalElements.value / pageSize)));
-
 const historyTotalPages = computed(() =>
   Math.max(1, Math.ceil(historyTotalElements.value / pageSize)),
 );
 
-let loansRequestId = 0;
 let historyRequestId = 0;
-
-async function loadLoans() {
-  const currentRequest = ++loansRequestId;
-  loading.value = true;
-
-  try {
-    const response = await loanService.findAll(search.value ?? '', currentPage.value, pageSize);
-
-    if (currentRequest !== loansRequestId) return;
-
-    loans.value = response.content;
-    totalElements.value = response.totalElements;
-  } catch (error: unknown) {
-    reportApiError(error);
-    if (currentRequest !== loansRequestId) return;
-
-    notifyLocalized(() => ({
-      type: 'negative',
-      message: t(getApiErrorKey(error, 'loans.loadError')),
-    }));
-  } finally {
-    if (currentRequest === loansRequestId) {
-      loading.value = false;
-    }
-  }
-}
 
 async function loadRecentHistory() {
   loadingRecentHistory.value = true;
 
   try {
     const response = await loanService.findHistory('', 1, 5);
-
     recentHistory.value = response.content;
   } catch (error: unknown) {
     reportApiError(error);
+
     notifyLocalized(() => ({
       type: 'negative',
       message: t(getApiErrorKey(error, 'loans.recentError')),
@@ -101,7 +83,11 @@ async function loadHistory() {
   loadingHistory.value = true;
 
   try {
-    const response = await loanService.findHistory('', historyPage.value, pageSize);
+    const response = await loanService.findHistory(
+      '',
+      historyPage.value,
+      pageSize,
+    );
 
     if (currentRequest !== historyRequestId) return;
 
@@ -109,6 +95,7 @@ async function loadHistory() {
     historyTotalElements.value = response.totalElements;
   } catch (error: unknown) {
     reportApiError(error);
+
     if (currentRequest !== historyRequestId) return;
 
     notifyLocalized(() => ({
@@ -123,10 +110,7 @@ async function loadHistory() {
 }
 
 function changePage(page: number) {
-  if (page === currentPage.value) return;
-
-  currentPage.value = page;
-  void loadLoans();
+  paginatedLoans.changePage(page);
 }
 
 function changeHistoryPage(page: number) {
@@ -162,9 +146,10 @@ async function saveLoan(data: LoanRequest) {
       message: t('loans.created'),
     }));
 
-    await loadLoans();
+    await loadPage();
   } catch (error: unknown) {
     reportApiError(error);
+
     notifyLocalized(() => ({
       type: 'negative',
       message: t(getApiErrorKey(error, 'loans.createError')),
@@ -184,6 +169,7 @@ async function viewDetails(id: string) {
     showDetailsDialog.value = true;
   } catch (error: unknown) {
     reportApiError(error);
+
     notifyLocalized(() => ({
       type: 'negative',
       message: t(getApiErrorKey(error, 'loans.detailsError')),
@@ -227,20 +213,18 @@ async function confirmReturn() {
       message: t('loans.returned'),
     }));
 
-    // Evitar página vazia quando o último empréstimo é devolvido
     if (loans.value.length === 1 && currentPage.value > 1) {
       currentPage.value--;
     }
 
-    // Atualizar empréstimos ativos e histórico recente
-    await Promise.all([loadLoans(), loadRecentHistory()]);
+    await Promise.all([loadPage(), loadRecentHistory()]);
 
-    // Atualizar também o histórico completo, se estiver aberto
     if (showHistoryDialog.value) {
       await loadHistory();
     }
   } catch (error: unknown) {
     reportApiError(error);
+
     notifyLocalized(() => ({
       type: 'negative',
       message: t(getApiErrorKey(error, 'loans.returnError')),
@@ -250,13 +234,7 @@ async function confirmReturn() {
   }
 }
 
-watch(search, () => {
-  currentPage.value = 1;
-  void loadLoans();
-});
-
 onMounted(() => {
-  void loadLoans();
   void loadRecentHistory();
 });
 </script>
@@ -305,8 +283,14 @@ onMounted(() => {
             $t(
               'pagination.loans',
               {
-                start: $n(totalElements === 0 ? 0 : (currentPage - 1) * pageSize + 1),
-                end: $n(Math.min(currentPage * pageSize, totalElements)),
+                start: $n(
+                  totalElements === 0
+                    ? 0
+                    : (currentPage - 1) * pageSize + 1,
+                ),
+                end: $n(
+                  Math.min(currentPage * pageSize, totalElements),
+                ),
                 total: $n(totalElements),
               },
               totalElements,
@@ -333,11 +317,20 @@ onMounted(() => {
           {{ $t('loans.recentHistory') }}
         </div>
 
-        <q-btn flat no-caps :label="$t('loans.fullHistory')" color="primary" @click="openHistory" />
+        <q-btn
+          flat
+          no-caps
+          :label="$t('loans.fullHistory')"
+          color="primary"
+          @click="openHistory"
+        />
       </q-card-section>
 
       <q-card-section class="history-table-section">
-        <LoansTable :loans="recentHistory" :loading="loadingRecentHistory" />
+        <LoansTable
+          :loans="recentHistory"
+          :loading="loadingRecentHistory"
+        />
       </q-card-section>
     </q-card>
 
@@ -346,11 +339,20 @@ onMounted(() => {
         <q-card-section class="history-dialog-header">
           <h2>{{ $t('loans.recentHistory') }}</h2>
 
-          <q-btn v-close-popup flat round icon="close" :aria-label="$t('common.close')" />
+          <q-btn
+            v-close-popup
+            flat
+            round
+            icon="close"
+            :aria-label="$t('common.close')"
+          />
         </q-card-section>
 
         <q-card-section>
-          <LoansTable :loans="history" :loading="loadingHistory" />
+          <LoansTable
+            :loans="history"
+            :loading="loadingHistory"
+          />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -366,7 +368,11 @@ onMounted(() => {
       </q-card>
     </q-dialog>
 
-    <LoanFormDialog v-model="showCreateDialog" :loading="savingLoan" @save="saveLoan" />
+    <LoanFormDialog
+      v-model="showCreateDialog"
+      :loading="savingLoan"
+      @save="saveLoan"
+    />
 
     <LoanDetailsDialog
       v-model="showDetailsDialog"

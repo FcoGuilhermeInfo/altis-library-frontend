@@ -1,3 +1,4 @@
+
 import { defineBoot } from '#q-app';
 import { useAuthStore } from '@/stores/authStore';
 import { markSessionErrorHandled } from '@/utils/apiErrors';
@@ -14,7 +15,10 @@ export default defineBoot(({ store, router }) => {
 
   api.interceptors.request.use((config) => {
     if (authStore.token) {
-      config.headers.set('Authorization', `Bearer ${authStore.token}`);
+      config.headers.set(
+        'Authorization',
+        `Bearer ${authStore.token}`,
+      );
     }
 
     return config;
@@ -22,37 +26,91 @@ export default defineBoot(({ store, router }) => {
 
   api.interceptors.response.use(
     (response) => response,
+
     async (error: unknown) => {
-      if (!axios.isAxiosError(error)) throw error;
+      if (!axios.isAxiosError(error)) {
+        throw error instanceof Error
+          ? error
+          : new Error(String(error));
+      }
 
       const status = error.response?.status;
       const requestPath = error.config?.url?.split('?')[0] ?? '';
-      const isPublicAuthRequest = [
+      const requestMethod = error.config?.method?.toLowerCase();
+
+      const currentRoute = router.currentRoute.value;
+      const currentPath = currentRoute.path;
+
+      const routeRequiresAuth = currentRoute.matched.some(
+        (record) => record.meta.requiresAuth,
+      );
+
+      const publicAuthRoutes = [
+        '/login',
+        '/register',
+        '/forgot-password',
+        '/reset-password',
+      ];
+
+      const publicAuthRequests = [
         '/auth/login',
         '/auth/forgot-password',
         '/auth/reset-password',
-      ].includes(requestPath);
+      ];
 
-      const currentRoute = router.currentRoute.value;
-      const routeRequiresAuth = currentRoute.matched.some((record) => record.meta.requiresAuth);
+      const isPublicAuthRequest = publicAuthRequests.includes(
+        requestPath,
+      );
 
       if (
-        status === 401 &&
-        !isPublicAuthRequest &&
-        !sessionRedirectInProgress &&
-        (authStore.token || routeRequiresAuth)
+        isPublicAuthRequest ||
+        publicAuthRoutes.includes(currentPath)
       ) {
-        markSessionErrorHandled(error);
-        authStore.expireSession();
-        if (currentRoute.path !== '/login') {
+        throw error;
+      }
+
+      const requestedUserId = requestPath.match(
+        /(?:^|\/)users\/([^/]+)$/,
+      )?.[1];
+
+      const isOwnProfileRequest =
+        (requestMethod === 'get' || requestMethod === 'patch') &&
+        requestedUserId !== undefined &&
+        requestedUserId === authStore.user?.id;
+
+      if (status === 401) {
+        if (
+          isOwnProfileRequest &&
+          !authStore.isSessionTokenExpired()
+        ) {
+          throw error;
+        }
+
+        if (
+          !sessionRedirectInProgress &&
+          (authStore.token || routeRequiresAuth)
+        ) {
+          markSessionErrorHandled(error);
+
           sessionRedirectInProgress = true;
+
           try {
-            await router.replace('/login');
+            authStore.logout();
+
+            if (currentPath !== '/login') {
+              await router.replace('/login');
+            }
           } finally {
             sessionRedirectInProgress = false;
           }
         }
-      } else if (status === 403 && routeRequiresAuth && currentRoute.path !== '/acess-denied') {
+      }
+
+      if (
+        status === 403 &&
+        routeRequiresAuth &&
+        currentPath !== '/acess-denied'
+      ) {
         await router.replace('/acess-denied');
       }
 
@@ -60,4 +118,5 @@ export default defineBoot(({ store, router }) => {
     },
   );
 });
+
 export { api };

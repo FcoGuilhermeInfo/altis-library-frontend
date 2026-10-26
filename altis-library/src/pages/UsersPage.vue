@@ -1,58 +1,29 @@
 <script setup lang="ts">
 import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
 import { useI18n } from 'vue-i18n';
-import { ref, onMounted, watch } from 'vue';
+import { ref } from 'vue';
 import { notifyLocalized } from '@/utils/localizedNotify';
 import { userService } from '@/services/userService';
 import type { UserResponse } from '@/types/user';
 import UsersTable from '@/components/users/UsersTable.vue';
 import UserDetailsDialog from '@/components/users/UserDetailsDialog.vue';
+import { usePaginatedList } from '@/composables/usePaginatedList';
 
 const { t } = useI18n({ useScope: 'global' });
 
-const users = ref<UserResponse[]>([]);
-const search = ref('');
-const currentPage = ref(1);
-const totalElements = ref(0);
+const paginatedUsers = usePaginatedList<UserResponse>((search, page, size) =>
+  userService.findAll(search, page, size),
+  { pageSize: 10 },
+);
 
-const loading = ref(false);
+const { items: users, search, currentPage, totalElements, loading, totalPages } = paginatedUsers;
+
 const updatingId = ref<string | null>(null);
-
 const selectedUser = ref<UserResponse | null>(null);
 const showDetails = ref(false);
 
-let requestId = 0;
-
-async function loadUsers() {
-  const currentRequest = ++requestId;
-
-  loading.value = true;
-
-  try {
-    const response = await userService.findAll(search.value, currentPage.value, 10);
-
-    if (currentRequest !== requestId) return;
-
-    users.value = response.content;
-    totalElements.value = response.totalElements;
-  } catch (error: unknown) {
-    reportApiError(error);
-    if (currentRequest !== requestId) return;
-
-    notifyLocalized(() => ({
-      type: 'negative',
-      message: t(getApiErrorKey(error, 'users.loadError')),
-    }));
-  } finally {
-    if (currentRequest === requestId) {
-      loading.value = false;
-    }
-  }
-}
-
 function changePage(page: number) {
-  currentPage.value = page;
-  void loadUsers();
+  paginatedUsers.changePage(page);
 }
 
 function viewDetails(user: UserResponse) {
@@ -87,14 +58,6 @@ async function changeStatus(user: UserResponse) {
   }
 }
 
-watch(search, () => {
-  currentPage.value = 1;
-  void loadUsers();
-});
-
-onMounted(() => {
-  void loadUsers();
-});
 </script>
 
 <template>
@@ -151,7 +114,7 @@ onMounted(() => {
 
         <q-pagination
           v-model="currentPage"
-          :max="Math.max(1, Math.ceil(totalElements / 10))"
+          :max="totalPages"
           :max-pages="5"
           boundary-numbers
           direction-links
