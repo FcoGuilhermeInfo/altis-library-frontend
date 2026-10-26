@@ -11,22 +11,30 @@ import { saveToken, getToken, clearToken } from '@/utils/tokenStorage';
 import type { AuthenticatedUser, LoginRequest, LoginResponse, UserRole } from '@/types/auth';
 
 interface JwtPayload {
-  sub: string;
-  userId: string;
-  role: UserRole;
-  exp: number;
+  sub?: string;
+  userId?: string;
+  user_id?: string;
+  id?: string;
+  email?: string;
+  role?: UserRole;
+  exp?: number;
 }
 
 function isValidPayload(payload: JwtPayload): boolean {
+  const email = payload.sub ?? payload.email;
+  const userId = payload.userId ?? payload.user_id ?? payload.id;
+  const role = payload.role;
+  const expiration = Number(payload.exp ?? 0);
+
   return (
-    typeof payload.sub === 'string' &&
-    payload.sub.trim().length > 0 &&
-    typeof payload.userId === 'string' &&
-    payload.userId.trim().length > 0 &&
-    (payload.role === ROLES.ADMIN || payload.role === ROLES.USER) &&
-    typeof payload.exp === 'number' &&
-    Number.isFinite(payload.exp) &&
-    payload.exp * 1000 > Date.now()
+    typeof email === 'string' &&
+    email.trim().length > 0 &&
+    typeof userId === 'string' &&
+    userId.trim().length > 0 &&
+    (role === ROLES.ADMIN || role === ROLES.USER) &&
+    Number.isFinite(expiration) &&
+    expiration > 0 &&
+    expiration * 1000 > Date.now()
   );
 }
 
@@ -44,6 +52,17 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value !== null && token.value !== null;
   };
 
+  function isSessionTokenExpired(): boolean {
+    if (!token.value) return true;
+
+    try {
+      const expiration = Number(jwtDecode<JwtPayload>(token.value).exp ?? 0);
+      return !Number.isFinite(expiration) || expiration * 1000 <= Date.now();
+    } catch {
+      return true;
+    }
+  }
+
   async function login(credentials: LoginRequest): Promise<void> {
     loading.value = true;
     errorKey.value = null;
@@ -51,21 +70,19 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response: LoginResponse = await authService.login(credentials);
       const payload = jwtDecode<JwtPayload>(response.token);
+      const userIdFromPayload = payload.userId ?? payload.user_id ?? payload.id;
+      const userId = userIdFromPayload;
 
-      if (
-        !isValidPayload(payload) ||
-        typeof response.user_id !== 'string' ||
-        response.user_id !== payload.userId
-      ) {
+      if (!isValidPayload(payload) || typeof userId !== 'string' || userId.trim().length === 0) {
         throw new Error('O token recebido possui dados inválidos.');
       }
 
       token.value = response.token;
 
       user.value = {
-        id: response.user_id,
-        email: payload.sub,
-        role: payload.role,
+        id: userId,
+        email: payload.sub ?? payload.email ?? userId,
+        role: payload.role ?? ROLES.USER,
       };
 
       saveToken(response.token);
@@ -105,12 +122,14 @@ export const useAuthStore = defineStore('auth', () => {
         return;
       }
 
+      const payloadUserId = payload.userId ?? payload.user_id ?? payload.id;
+
       token.value = savedToken;
 
       user.value = {
-        id: payload.userId,
-        email: payload.sub,
-        role: payload.role,
+        id: payloadUserId ?? '',
+        email: payload.sub ?? payload.email ?? '',
+        role: payload.role ?? ROLES.USER,
       };
     } catch {
       logout();
@@ -123,6 +142,7 @@ export const useAuthStore = defineStore('auth', () => {
     loading,
     error,
     isAuthenticated,
+    isSessionTokenExpired,
     isAdmin,
     isUser,
     login,

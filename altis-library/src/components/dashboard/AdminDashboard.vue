@@ -174,7 +174,7 @@ onMounted(() => {
           </div>
 
           <!-- Livro mais emprestado -->
-          <div class="detail-card">
+          <div class="detail-card most-borrowed-card">
             <h2 class="detail-title">
               {{ $t('dashboard.admin.mostBorrowed') }}
               <span>{{ $t('dashboard.thisMonth') }}</span>
@@ -284,13 +284,13 @@ onMounted(() => {
 <style scoped>
 .admin-dashboard {
   width: 100%;
-  padding: 14px 28px 40px;
+  padding: 18px 26px 30px;
   background-color: #faf8f8;
   box-sizing: border-box;
 }
 
 .dashboard-title {
-  margin: 0 0 24px;
+  margin: 0 0 18px;
   color: #0b5e69;
   font-size: 30px;
   font-weight: 600;
@@ -300,128 +300,137 @@ onMounted(() => {
 .dashboard-panel {
   width: 100%;
   background-color: white;
-  border-radius: 15px;
-  box-shadow: 0 2px 2px rgb(0 0 0 / 20%);
+  border-radius: 14px;
+  box-shadow: 0 2px 3px rgb(0 0 0 / 15%);
   box-sizing: border-box;
 }
 
 /* Indicadores superiores */
 
 .statistics-panel {
-  margin-bottom: 44px;
+  margin-bottom: 24px;
 }
 
 .statistics-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: center;
-  gap: 26px;
-  padding: 28px 22px;
+  align-items: stretch;
+  gap: 16px;
+  padding: 18px 16px;
 }
 
 .stat-card {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
-  min-height: 90px;
-  padding: 12px;
-  border: 1px solid #69a3b4;
+  min-height: 110px;
+  padding: 14px 16px;
+  border: 1px solid #77aab5;
+  border-left: 4px solid #0b717f;
   border-radius: 12px;
+  background: #fff;
 }
 
 .stat-icon {
   flex-shrink: 0;
-  color: #08788b;
-  font-size: 30px;
+  color: #0b717f;
+  font-size: 32px;
 }
 
 .stat-content {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 5px;
+  justify-content: center;
+  gap: 4px;
   min-width: 0;
 }
 
 .stat-label {
-  color: #333;
-  font-size: 12px;
+  color: #2c2c2c;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1.2;
 }
 
 .stat-label small {
   display: block;
-  color: #777;
+  color: #666;
   font-size: 10px;
+  font-weight: 500;
 }
 
 .stat-value {
-  color: #333;
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1.2;
+  color: #1d1d1d;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
 .stat-description {
   color: #666;
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 /* Painel inferior */
 
 .details-grid {
   display: grid;
-  grid-template-columns:
-    minmax(0, 1fr)
-    minmax(0, 1fr)
-    minmax(0, 1.8fr);
-  gap: 22px;
-  padding: 26px 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.8fr);
+  gap: 18px;
+  align-items: stretch;
+  padding: 18px 16px;
 }
 
 .detail-card {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  min-height: 210px;
-  padding: 14px;
+  min-height: 230px;
+  padding: 16px 14px 12px;
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 2px 2px rgb(0 0 0 / 20%);
+  box-shadow: 0 2px 3px rgb(0 0 0 / 15%);
 }
 
 .detail-title {
-  margin: 0 0 22px;
-  color: #222;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
+  margin: 0 0 16px;
+  color: #1b1b1b;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .detail-title span {
-  color: #777;
+  color: #666;
+  font-size: 11px;
   font-weight: 400;
 }
 
 .book-information {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
+  margin-bottom: 16px;
   color: #444;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .book-information strong {
   overflow-wrap: anywhere;
-  font-weight: 500;
+  color: #1e1e1e;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .date-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 8px;
   margin-top: auto;
 }
 
@@ -430,7 +439,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 5px;
   min-width: 0;
-  padding: 8px;
+  padding: 8px 9px;
   background-color: #f0f0f0;
   border-radius: 9px;
 }
@@ -441,29 +450,42 @@ onMounted(() => {
 }
 
 .date-box strong {
-  color: #444;
+  color: #343434;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .borrowed-highlight {
   display: flex;
   flex-direction: column;
-  align-self: center;
+  justify-content: center;
+  align-self: flex-end;
+  width: min(48%, 150px);
   margin-top: auto;
-  padding: 10px 16px;
-  background-color: #a5f5b4;
-  border-radius: 9px;
-  color: #087a29;
+  padding: 10px 8px 8px;
+  background-color: #dff9e5;
+  border-radius: 10px;
+  color: #0b7a32;
+  text-align: center;
 }
 
 .borrowed-highlight strong {
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .borrowed-highlight span {
   font-size: 10px;
+  font-weight: 600;
+}
+
+.most-borrowed-card {
+  justify-content: flex-start;
+}
+
+.most-borrowed-card .book-information {
+  margin-bottom: 10px;
 }
 
 /* Gráfico */
@@ -473,30 +495,33 @@ onMounted(() => {
   flex: 1;
   flex-direction: column;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   min-width: 0;
 }
 
 .chart-row {
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr) 30px;
+  grid-template-columns: 120px minmax(0, 1fr) 32px;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
 }
 
 .chart-label {
   overflow: hidden;
-  color: #222;
-  font-size: 11px;
+  color: #202020;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chart-track {
   width: 100%;
-  height: 15px;
+  height: 14px;
   background-color: #edf1f1;
+  border-radius: 999px;
+  overflow: hidden;
 }
 
 .chart-bar {
@@ -506,16 +531,47 @@ onMounted(() => {
 
 .chart-count {
   color: #0b5e69;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
 }
 
 .chart-scale {
   display: flex;
   justify-content: space-between;
-  margin-left: 99px;
-  margin-right: 30px;
+  margin-left: 130px;
+  margin-right: 32px;
   color: #0b5e69;
   font-size: 10px;
+}
+
+@media (max-width: 1100px) {
+  .statistics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-dashboard {
+    padding: 14px 14px 20px;
+  }
+
+  .statistics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-row {
+    grid-template-columns: 90px minmax(0, 1fr) 26px;
+  }
+
+  .chart-scale {
+    margin-left: 100px;
+    margin-right: 26px;
+  }
 }
 
 .empty-message {
