@@ -1,0 +1,99 @@
+import type { RouteRecordRaw } from 'vue-router';
+import { ROLES } from '@/constants/roles';
+
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    redirect: '/login',
+  },
+
+  {
+    path: '/login',
+    component: () => import('@/pages/LoginPage.vue'),
+  },
+
+  {
+    path: '/register',
+    component: () => import('@/pages/RegisterPage.vue'),
+  },
+
+  {
+    path: '/forgot-password',
+    component: () => import('@/pages/ForgotPasswordPage.vue'),
+  },
+
+  {
+    path: '/reset-password',
+    component: () => import('@/pages/ResetPasswordPage.vue'),
+  },
+
+  {
+    path: '/',
+    component: () => import('@/layouts/MainLayout.vue'),
+    meta: {
+      requiresAuth: true,
+    },
+    children: [
+      {
+        path: '/dashboard',
+        component: () => import('@/pages/DashboardPage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN, ROLES.USER],
+        },
+      },
+      {
+        path: '/profile',
+        component: () => import('@/pages/ProfilePage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN, ROLES.USER],
+        },
+      },
+      {
+        path: 'acess-denied',
+        component: () => import('@/pages/AcessDeniedPage.vue'),
+      },
+
+      {
+        path: '/loans',
+        component: () => import('@/pages/LoansPage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN],
+        },
+      },
+      {
+        path: '/users',
+        component: () => import('@/pages/UsersPage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN],
+        },
+      },
+      {
+        path: '/publishers',
+        component: () => import('@/pages/PublishersPage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN],
+        },
+      },
+      {
+        path: '/books',
+        component: () => import('@/pages/BooksPage.vue'),
+        meta: {
+          requiresAuth: true,
+          roles: [ROLES.ADMIN],
+        },
+      },
+    ],
+  },
+
+  {
+    path: '/:catchAll(.*)*',
+    component: () => import('@/pages/ErrorNotFound.vue'),
+  },
+];
+
+export default routes;
