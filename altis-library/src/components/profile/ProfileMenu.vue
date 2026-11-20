@@ -157,7 +157,13 @@ async function handleLogout() {
     padding: 0;
 }
 
+.profile-dropdown :deep(.q-btn-dropdown__arrow-container) {
+    padding-left: 0;
+}
+
 .profile-menu {
+    display: flex;
+    flex-direction: column;
     width: 220px;
     height: 360px;
     background-color: #0E5E69;
@@ -190,7 +196,8 @@ async function handleLogout() {
 }
 
 .logout-item {
-    margin-top: 100px;
+    margin-top: auto;
+    margin-bottom: 12px;
 }
 .menu-item-active {
     background-color: rgba(14, 94, 105, 0.12);

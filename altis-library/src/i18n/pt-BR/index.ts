@@ -1,3 +1,4 @@
+
 export default {
   common: {
     save: 'Salvar',
@@ -250,6 +251,17 @@ export default {
     loadError: 'Não foi possível carregar o perfil.',
     updateError: 'Não foi possível atualizar o perfil.',
     unavailable: 'Não foi possível apresentar os dados do perfil.',
+    currentPassword: 'Senha Atual',
+    newPassword: 'Nova Senha',
+    confirmPassword: 'Confirmar Senha',
+    currentPasswordRequired: 'Informe sua senha atual.',
+    newPasswordRequired: 'Informe a nova senha.',
+    confirmPasswordRequired: 'Confirme sua nova senha.',
+    passwordLength: 'A nova senha deve ter entre 8 e 15 caracteres.',
+    passwordMustDiffer: 'A nova senha deve ser diferente da senha atual.',
+    passwordMismatch: 'As senhas não coincidem.',
+    showPassword: 'Mostrar senha',
+    hidePassword: 'Ocultar senha',
   },
   notFound: {
     message: 'Ops. Não há nada aqui...',

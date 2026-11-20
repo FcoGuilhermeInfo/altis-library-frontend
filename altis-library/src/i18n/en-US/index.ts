@@ -1,3 +1,4 @@
+
 export default {
   common: {
     save: 'Save',
@@ -247,6 +248,17 @@ export default {
     loadError: 'Unable to load your profile.',
     updateError: 'Unable to update your profile.',
     unavailable: 'Unable to display profile data.',
+    currentPassword: 'Current password',
+    newPassword: 'New password',
+    confirmPassword: 'Confirm password',
+    currentPasswordRequired: 'Enter your current password.',
+    newPasswordRequired: 'Enter a new password.',
+    confirmPasswordRequired: 'Confirm your new password.',
+    passwordLength: 'The new password must contain between 8 and 15 characters.',
+    passwordMustDiffer: 'The new password must be different from your current password.',
+    passwordMismatch: 'The passwords do not match.',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
   },
   notFound: {
     message: 'Oops. Nothing here...',

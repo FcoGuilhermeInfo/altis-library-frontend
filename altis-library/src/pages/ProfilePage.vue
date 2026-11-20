@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { getApiErrorKey, reportApiError } from '@/utils/apiErrors';
 import { formatDate } from '@/utils/dateUtils';
@@ -5,9 +6,12 @@ import { useI18n } from 'vue-i18n';
 import { computed, onMounted, ref } from 'vue';
 import { notifyLocalized } from '@/utils/localizedNotify';
 
-import { api } from '@/boot/axios';
 import { useAuthStore } from '@/stores/authStore';
-import { userService } from '@/services/userService';
+import {
+  userService,
+  type UserPasswordChange,
+  type UserProfileUpdate,
+} from '@/services/userService';
 
 import ProfileEditDialog from '@/components/profile/ProfileEditDialog.vue';
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
@@ -24,10 +28,8 @@ interface ProfileData {
   address: string;
 }
 
-interface ProfileUpdate {
-  name: string;
-  phone: string;
-  address: string;
+interface ProfileUpdate extends UserProfileUpdate {
+  passwordChange?: UserPasswordChange;
 }
 
 const authStore = useAuthStore();
@@ -43,7 +45,9 @@ const pendingUpdate = ref<ProfileUpdate | null>(null);
 
 const isAdmin = computed(() => authStore.isAdmin);
 
-const userRole = computed(() => (isAdmin.value ? t('profile.admin') : t('loans.borrower')));
+const userRole = computed(() =>
+  isAdmin.value ? t('profile.admin') : t('loans.borrower'),
+);
 
 async function loadProfile() {
   const userId = authStore.user?.id;
@@ -82,7 +86,21 @@ function openEditDialog() {
 function requestSave(data: ProfileUpdate) {
   if (saving.value || showConfirmDialog.value) return;
 
-  pendingUpdate.value = data;
+  pendingUpdate.value = {
+    name: data.name,
+    phone: data.phone,
+    address: data.address,
+    ...(data.passwordChange
+      ? {
+          passwordChange: {
+            currentPassword: data.passwordChange.currentPassword,
+            newPassword: data.passwordChange.newPassword,
+            confirmPassword: data.passwordChange.confirmPassword,
+          },
+        }
+      : {}),
+  };
+
   showConfirmDialog.value = true;
 }
 
@@ -92,28 +110,78 @@ function onConfirmDialogChange(value: boolean) {
   }
 }
 
+function hasProfileChanges(data: UserProfileUpdate): boolean {
+  if (!profile.value) return false;
+
+  const currentPhone = (profile.value.phone ?? '').replace(/\D/g, '');
+  const newPhone = data.phone.replace(/\D/g, '');
+
+  return (
+    data.name !== profile.value.name ||
+    newPhone !== currentPhone ||
+    data.address !== profile.value.address
+  );
+}
+
 async function confirmSave() {
   const data = pendingUpdate.value;
   const userId = authStore.user?.id;
 
-  if (!data || !userId || saving.value || isAdmin.value) return;
+  if (
+    !data ||
+    !userId ||
+    !profile.value ||
+    saving.value ||
+    isAdmin.value
+  ) {
+    return;
+  }
 
   saving.value = true;
 
-  try {
-    const response = await api.patch<ProfileData>(`/users/${userId}`, data);
+  let profileUpdated = false;
 
-    profile.value = response.data;
+  try {
+    if (hasProfileChanges(data)) {
+      const updated = await userService.update(userId, {
+        name: data.name,
+        phone: data.phone,
+        address: data.address,
+      });
+
+      profile.value = updated;
+      profileUpdated = true;
+    }
+
+    if (data.passwordChange) {
+      await userService.changePassword(data.passwordChange);
+    }
+
     pendingUpdate.value = null;
     showConfirmDialog.value = false;
     showEditDialog.value = false;
 
-    notifyLocalized(() => ({
-      type: 'positive',
-      message: t('profile.updated'),
-    }));
+    if (data.passwordChange) {
+      notifyLocalized(() => ({
+        type: 'positive',
+        message: t('resetPassword.success'),
+      }));
+    } else {
+      notifyLocalized(() => ({
+        type: 'positive',
+        message: t('profile.updated'),
+      }));
+    }
   } catch (error: unknown) {
     reportApiError(error);
+
+    if (profileUpdated) {
+      notifyLocalized(() => ({
+        type: 'positive',
+        message: t('profile.updated'),
+      }));
+    }
+
     notifyLocalized(() => ({
       type: 'negative',
       message: t(getApiErrorKey(error, 'profile.updateError')),
@@ -130,7 +198,10 @@ function formatCpf(value: string | null | undefined): string {
 
   if (digits.length !== 11) return value;
 
-  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  return digits.replace(
+    /(\d{3})(\d{3})(\d{3})(\d{2})/,
+    '$1.$2.$3-$4',
+  );
 }
 
 function formatPhone(value: string | null | undefined): string {
@@ -139,11 +210,17 @@ function formatPhone(value: string | null | undefined): string {
   const digits = value.replace(/\D/g, '');
 
   if (digits.length === 11) {
-    return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    return digits.replace(
+      /(\d{2})(\d{5})(\d{4})/,
+      '($1) $2-$3',
+    );
   }
 
   if (digits.length === 10) {
-    return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    return digits.replace(
+      /(\d{2})(\d{4})(\d{4})/,
+      '($1) $2-$3',
+    );
   }
 
   return value;
@@ -161,12 +238,20 @@ onMounted(() => {
     </h1>
 
     <div v-if="loading" class="feedback-container">
-      <q-spinner :aria-label="$t('common.loading')" size="48px" color="primary" />
+      <q-spinner
+        :aria-label="$t('common.loading')"
+        size="48px"
+        color="primary"
+      />
     </div>
 
     <q-card v-else-if="profile" flat class="profile-card">
       <q-card-section class="profile-header">
-        <q-icon name="account_circle" size="56px" color="dark" />
+        <q-icon
+          name="account_circle"
+          size="56px"
+          color="dark"
+        />
 
         <div class="profile-identity">
           <strong>{{ profile.name }}</strong>
@@ -232,7 +317,13 @@ onMounted(() => {
     <div v-else class="feedback-container">
       <p>{{ $t('profile.unavailable') }}</p>
 
-      <q-btn unelevated no-caps color="primary" :label="$t('common.retry')" @click="loadProfile" />
+      <q-btn
+        unelevated
+        no-caps
+        color="primary"
+        :label="$t('common.retry')"
+        @click="loadProfile"
+      />
     </div>
 
     <ProfileEditDialog
