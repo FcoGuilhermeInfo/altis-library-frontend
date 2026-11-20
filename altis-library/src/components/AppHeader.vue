@@ -26,6 +26,5 @@ import ProfileMenu from '@/components/profile/ProfileMenu.vue'
   width: 75px;
   height: auto;
   margin-left: 70px;
-  margin-top: 15px;
 }
 </style>

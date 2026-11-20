@@ -1,3 +1,4 @@
+
 export default {
   common: {
     save: 'Guardar',
@@ -104,7 +105,7 @@ export default {
     year: 'Introduce un año válido.',
     quantity: 'La cantidad debe ser mayor que cero.',
     publisher: 'Selecciona una editorial.',
-    website: 'Introduce un sitio web válido.',
+    website: 'Introduce un sitio web.',
     futureReturn: 'La fecha de devolución prevista debe ser futura.',
     returnDate: 'Selecciona la fecha de devolución.',
     name: 'Introduce tu nombre.',
@@ -258,6 +259,17 @@ export default {
     loadError: 'No se pudo cargar el perfil.',
     updateError: 'No se pudo actualizar el perfil.',
     unavailable: 'No se pudieron mostrar los datos del perfil.',
+    currentPassword: 'Contraseña actual',
+    newPassword: 'Nueva contraseña',
+    confirmPassword: 'Confirmar contraseña',
+    currentPasswordRequired: 'Introduce tu contraseña actual.',
+    newPasswordRequired: 'Introduce una nueva contraseña.',
+    confirmPasswordRequired: 'Confirma tu nueva contraseña.',
+    passwordLength: 'La nueva contraseña debe tener entre 8 y 15 caracteres.',
+    passwordMustDiffer: 'La nueva contraseña debe ser diferente de la actual.',
+    passwordMismatch: 'Las contraseñas no coinciden.',
+    showPassword: 'Mostrar contraseña',
+    hidePassword: 'Ocultar contraseña',
   },
   notFound: {
     message: 'Vaya. No hay nada aquí...',
